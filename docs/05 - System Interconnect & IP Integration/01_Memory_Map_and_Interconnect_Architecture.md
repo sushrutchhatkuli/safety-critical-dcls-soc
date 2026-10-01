@@ -10,7 +10,7 @@ date_created: 2026-10-01
 status: "Active / Production"
 ---
 
-# 🗺️ System Interconnect & Memory Map Architecture
+# System Interconnect & Memory Map Architecture
 
 > [!NOTE] **Subsystem Integration**
 > Connects the **DCLS Protected Core** to 4 distinct memory-mapped slave modules via an AXI4-Lite Crossbar: Instruction RAM, Data RAM, High-Reliability UART, and Custom Fixed-Point Accelerator.

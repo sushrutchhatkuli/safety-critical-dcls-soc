@@ -11,7 +11,7 @@ date_created: 2026-10-01
 status: "Active / Production"
 ---
 
-# 🏗️ Microarchitecture: DCLS Core Wrapper & Temporal Diversity Pipeline
+# Microarchitecture: DCLS Core Wrapper & Temporal Diversity Pipeline
 
 > [!NOTE] **RTL Target Module**
 > Implemented in `rtl/dcls/dcls_core_wrapper.sv`. Encloses two complete 5-stage pipelined RV32I cores (`core_master` and `core_shadow`) with hardware temporal diversity shift registers.

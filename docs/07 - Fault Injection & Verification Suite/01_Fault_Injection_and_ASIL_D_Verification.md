@@ -12,7 +12,7 @@ date_created: 2026-10-01
 status: "Active / Production"
 ---
 
-# 🧪 SystemVerilog Fault Injection & ASIL-D Verification Suite
+# SystemVerilog Fault Injection & ASIL-D Verification Suite
 
 > [!IMPORTANT] **Demonstrating ISO 26262 ASIL-D Compliance**
 > You cannot certify an ASIL-D chip simply by running functional tests. You must actively break the silicon by injecting hundreds of pseudo-random bit-flips into internal registers and ALUs, formally proving that **every single fault is detected ($\text{SPFM} > 99\%$) and contained before corrupting external state**.

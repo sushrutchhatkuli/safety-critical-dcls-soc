@@ -11,7 +11,7 @@ date_created: 2026-10-01
 status: "Active / Production"
 ---
 
-# 🚗 Bare-Metal Safety Firmware & ABS Control Algorithm
+# Bare-Metal Safety Firmware & ABS Control Algorithm
 
 > [!NOTE] **Software Architecture**
 > Pure bare-metal C and RV32I assembly executing from Instruction RAM (`0x0000_0000`). Demonstrates continuous vehicle safety monitoring, actuator feedback control, and diagnostic UART streaming.

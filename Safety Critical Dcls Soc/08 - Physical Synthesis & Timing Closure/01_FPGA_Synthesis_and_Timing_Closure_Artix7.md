@@ -12,7 +12,7 @@ date_created: 2026-10-01
 status: "Active / Production"
 ---
 
-# ⚡ FPGA Physical Synthesis & Timing Closure (AMD Artix-7)
+# FPGA Physical Synthesis & Timing Closure (AMD Artix-7)
 
 > [!NOTE] **Hardware Target**
 > - **FPGA Device**: AMD Xilinx Artix-7 `xc7a35tcsg324-1`

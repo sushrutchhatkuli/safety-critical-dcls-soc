@@ -12,7 +12,7 @@ date_created: 2026-10-01
 status: "Active / Production"
 ---
 
-# 🚨 Fault Control Unit (FCU) & Blackbox Telemetry Logging
+# Fault Control Unit (FCU) & Blackbox Telemetry Logging
 
 > [!IMPORTANT] **Autonomous Hardware Telemetry Without Software Execution**
 > When a fault strikes, the CPU core is corrupt. It is impossible to trust the CPU to execute an interrupt service routine (ISR) to log its own failure. The **Fault Control Unit (FCU)** is a dedicated hardwired finite state machine that freezes hardware diagnostic context and streams out crash packets directly to the UART FIFO **completely independent of CPU software**.

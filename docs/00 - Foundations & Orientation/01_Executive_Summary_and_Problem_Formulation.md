@@ -12,7 +12,7 @@ date_created: 2026-10-01
 status: "Active / Production"
 ---
 
-# ⚠️ Executive Summary & Problem Formulation
+# Executive Summary & Problem Formulation
 
 > [!CAUTION] **The Physical Reality: Silicon Operates in an Unfriendly Universe**
 > Electronic control units in modern vehicles and aircraft do not fail solely because of bad software or aging wires. They fail because high-energy atmospheric particles collide with the silicon lattice, flipping microscopic bits while software runs completely unaware.

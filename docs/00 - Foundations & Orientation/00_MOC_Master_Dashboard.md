@@ -13,7 +13,7 @@ date_created: 2026-10-01
 status: "Active / Production"
 ---
 
-# 🛡️ ISO 26262 ASIL-D Dual-Core Lockstep (DCLS) Safety-Critical RISC-V SoC
+# ISO 26262 ASIL-D Dual-Core Lockstep (DCLS) Safety-Critical RISC-V SoC
 
 > [!IMPORTANT] **Automotive Safety Integrity Level D (ASIL-D) Specification**
 > - **Single Point Fault Metric (SPFM)**: $> 99\%$ (Achieved: **100%** on core register, PC, and ALU fault injection)
@@ -23,7 +23,7 @@ status: "Active / Production"
 
 ---
 
-## 🏛️ Top-Level System Architecture
+## Top-Level System Architecture
 
 ![DCLS System Architecture](assets/system_architecture.png)
 
@@ -76,60 +76,60 @@ flowchart TD
 
 ---
 
-## 🗺️ Master Vault Table of Contents
+## Master Vault Table of Contents
 
-### 📚 Pillar 0: Foundations & Orientation
+### Pillar 0: Foundations & Orientation
 - [[01_Executive_Summary_and_Problem_Formulation | Executive Summary & Problem Formulation]]: Why cosmic rays and voltage droops invert vehicle control decisions, and why software cannot save failing silicon.
 
 ---
 
-### 🛡️ Pillar 1: ISO 26262 & Functional Safety Theory
+### Pillar 1: ISO 26262 & Functional Safety Theory
 - [[01_ISO_26262_ASIL_D_Deep_Dive | ISO 26262 ASIL-D Standards & Mathematical Metrics]]: SPFM ($>99\%$), LFM ($>90\%$), PMHF ($<10\text{ FIT}$), FTTI budgets, and Diagnostic Coverage (DC) formulations.
 - [[02_Common_Cause_Failures_and_Temporal_Diversity | Common Cause Failures & Temporal Diversity Proof]]: The $\beta$-factor model, spatial vs. temporal diversity, and mathematical proof of why the 2-cycle stagger ($\Delta t = 2$) completely blinds electromagnetic pulses.
 
 ---
 
-### ⚙️ Pillar 2: Microarchitecture & Temporal Diversity
+### Pillar 2: Microarchitecture & Temporal Diversity
 - [[01_DCLS_Core_Wrapper_Architecture | DCLS Core Wrapper & 2-Cycle Delay Pipeline]]: Master and shadow RV32I cores, input delay shift registers, master output delay shift registers, and cycle-by-cycle phase alignment.
 
 ---
 
-### 🔒 Pillar 3: DCLS Comparator & AXI Bus Firewall
+### Pillar 3: DCLS Comparator & AXI Bus Firewall
 - [[01_Combinational_Comparator_and_Zero_Cycle_Firewall | DCLS Combinational Comparator & Zero-Cycle Bus Firewall]]: Parallel bus equality checking, combinational active-low gating on `AWVALID`/`WVALID`/`ARVALID`, and sub-nanosecond isolation.
 
 ---
 
-### 🚨 Pillar 4: Fault Control Unit & UART Telemetry
+### Pillar 4: Fault Control Unit & UART Telemetry
 - [[01_FCU_and_Blackbox_Telemetry_Logging | Fault Control Unit (FCU) & Blackbox Telemetry Streamer]]: FSM states, atomic context freezing (corrupted PC, cycle timestamp, mismatch vector), and autonomous hardware push into UART TX FIFO.
 
 ---
 
-### 🚌 Pillar 5: System Interconnect & IP Integration
+### Pillar 5: System Interconnect & IP Integration
 - [[01_Memory_Map_and_Interconnect_Architecture | SoC System Interconnect & Memory Map Architecture]]: Complete 32-bit address map, RAM controllers, custom compute accelerator, UART peripheral, and DCLS status registers.
 
 ---
 
-### 💻 Pillar 6: Bare-Metal Safety Firmware
+### Pillar 6: Bare-Metal Safety Firmware
 - [[01_Safety_Firmware_and_ABS_Control_Loop | Bare-Metal Safety Firmware & ABS Control Algorithm]]: `boot.S` startup, low-level UART driver, simulated Anti-lock Braking System control loop, and telemetry streaming.
 
 ---
 
-### 🧪 Pillar 7: Fault Injection & Verification Suite
+### Pillar 7: Fault Injection & Verification Suite
 - [[01_Fault_Injection_and_ASIL_D_Verification | SystemVerilog Fault Injection & ASIL-D Verification Suite]]: Randomized bit-flip injection (PC, Regfile, ALU, Branch Unit), SystemVerilog Assertions (SVA), and 100% SPFM mathematical scorecard.
 
 ---
 
-### ⚡ Pillar 8: Physical Synthesis & Timing Closure
+### Pillar 8: Physical Synthesis & Timing Closure
 - [[01_FPGA_Synthesis_and_Timing_Closure_Artix7 | FPGA Physical Synthesis & Timing Closure (Artix-7)]]: 100 MHz timing closure ($T_{clk} = 10.0\text{ ns}$, WNS $> 0\text{ ns}$), latch-free RTL sign-off, resource utilization, and power dissipation.
 
 ---
 
-### 📋 Pillar 9: Step-by-Step Implementation Roadmap
+### Pillar 9: Step-by-Step Implementation Roadmap
 - [[01_Comprehensive_Phase_by_Phase_Execution_Plan | Comprehensive Phase-by-Phase Implementation Roadmap]]: Engineering blueprint covering Phase 1 through Phase 8 with strict entry/exit criteria and verification sign-offs.
 
 ---
 
-## 📊 High-Level Metrics & ASIL-D Compliance Matrix
+## High-Level Metrics & ASIL-D Compliance Matrix
 
 | Metric / Parameter | Target (ISO 26262 ASIL-D) | DCLS SoC Implementation | Verification Status |
 | :--- | :--- | :--- | :--- |

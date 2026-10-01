@@ -8,14 +8,14 @@ date_created: 2026-10-01
 status: "Active / Production"
 ---
 
-# 🚀 Welcome to the Safety-Critical DCLS SoC Knowledge Base
+# Welcome to the Safety-Critical DCLS SoC Knowledge Base
 
 > [!TIP] **Quick Navigation**
-> Click here to access the **[[00_MOC_Master_Dashboard | 🗺️ Master Map of Content (MOC) Dashboard]]** which serves as the central control panel for the entire architectural vault.
+> Click here to access the **[[00_MOC_Master_Dashboard |  Master Map of Content (MOC) Dashboard]]** which serves as the central control panel for the entire architectural vault.
 
 ---
 
-## 📌 What is This Project?
+## What is This Project?
 An enterprise-grade **ISO 26262 ASIL-D compliant Dual-Core Lockstep (DCLS) Safety-Critical RISC-V SoC** engineered to eliminate Common Cause Failures (CCF) and protect autonomous drive-by-wire and avionics systems against Single Event Upsets (SEUs / cosmic ray bit-flips).
 
 ### Key Architectural Pillars:
@@ -27,7 +27,7 @@ An enterprise-grade **ISO 26262 ASIL-D compliant Dual-Core Lockstep (DCLS) Safet
 
 ---
 
-## 🗂️ Explore the Knowledge Pillars
+## Explore the Knowledge Pillars
 - **[[00_MOC_Master_Dashboard | 00 - Master Dashboard & Navigation]]**
 - **[[01_Executive_Summary_and_Problem_Formulation | 00 - Executive Summary & The SEU Problem]]**
 - **[[01_ISO_26262_ASIL_D_Deep_Dive | 01 - ISO 26262 ASIL-D Standards & Metrics (SPFM, LFM, FTTI)]]**

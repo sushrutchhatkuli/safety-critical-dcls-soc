@@ -11,7 +11,7 @@ date_created: 2026-10-01
 status: "Active / Production"
 ---
 
-# 🛑 DCLS Combinational Comparator & Zero-Cycle Bus Firewall
+# DCLS Combinational Comparator & Zero-Cycle Bus Firewall
 
 > [!CAUTION] **The Zero-Cycle Requirement**
 > If a fault detection circuit takes even 1 clock cycle to register an error before gating the bus, the corrupted data packet has already been acknowledged and latched into external SRAM, Flash, or a CAN/FlexRay motor controller. **The bus firewall must clamp writes combinationally in zero clock cycles ($< 1.0\text{ ns}$ propagation delay)**.

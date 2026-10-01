@@ -12,7 +12,7 @@ date_created: 2026-10-01
 status: "Active / Production"
 ---
 
-# 📜 ISO 26262 ASIL-D Deep Dive
+# ISO 26262 ASIL-D Deep Dive
 
 > [!NOTE] **Standard Reference**
 > **ISO 26262: Road vehicles — Functional safety (Parts 1–12)**. Part 5 specifically governs hardware-level design, quantitative safety metrics, and diagnostic mechanisms.

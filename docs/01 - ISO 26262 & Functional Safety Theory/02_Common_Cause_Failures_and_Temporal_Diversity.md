@@ -11,7 +11,7 @@ date_created: 2026-10-01
 status: "Active / Production"
 ---
 
-# ⏱️ Common Cause Failures & The 2-Cycle Temporal Diversity Stagger
+# Common Cause Failures & The 2-Cycle Temporal Diversity Stagger
 
 > [!IMPORTANT] **The Flaw of Naive Dual Redundancy**
 > If you instantiate two identical cores side-by-side on the same clock edge, a localized electromagnetic pulse (EMP), voltage droop, or thermal surge can flip the exact same bit in both cores simultaneously. A standard comparator will report that both cores agree—silently passing lethal corrupted data to external actuators.
