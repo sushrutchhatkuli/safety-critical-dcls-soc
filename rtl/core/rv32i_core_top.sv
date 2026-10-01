@@ -33,11 +33,15 @@ module rv32i_core_top (
     logic        stall_pc;
     logic        branch_taken;
     logic [31:0] branch_target;
+    logic        jump_taken;
+    logic [31:0] jump_target;
+    logic        pc_redirect;
+    logic [31:0] pc_redirect_target;
 
     assign if_pc_plus_4 = if_pc + 32'd4;
 
     // Next-PC Mux: Normal sequential (PC+4) vs. Branch/Jump Target
-    assign if_pc_next = branch_taken ? branch_target : if_pc_plus_4;
+    assign if_pc_next = pc_redirect ? pc_redirect_target : if_pc_plus_4;
 
     // Program Counter (PC) Register
     always_ff @(posedge clk or negedge rst_n) begin
@@ -226,6 +230,13 @@ module rv32i_core_top (
         .branch_target(branch_target)
     );
 
+    // Jump Execution Unit (JAL and JALR)
+    assign jump_taken = (ex_jump != 2'b00);
+    assign jump_target = (ex_jump == 2'b10) ? ((ex_alu_op_a + ex_imm_ext) & ~32'd1) : (ex_pc + ex_imm_ext);
+
+    assign pc_redirect = branch_taken | jump_taken;
+    assign pc_redirect_target = jump_taken ? jump_target : branch_target;
+
     logic [31:0] ex_pc_plus_4;
     assign ex_pc_plus_4 = ex_pc + 32'd4;
 
@@ -327,7 +338,7 @@ module rv32i_core_top (
         .id_ex_rd_addr(ex_rd_addr),
         .if_id_rs1_addr(id_rs1_addr),
         .if_id_rs2_addr(id_rs2_addr),
-        .branch_taken(branch_taken),
+        .branch_taken(pc_redirect),
         .stall_pc(stall_pc),
         .stall_if_id(stall_if_id),
         .flush_if_id(flush_if_id),

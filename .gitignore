@@ -9,6 +9,7 @@ xsim.dir/
 xsim*.backup.*
 xvlog.log
 xelab.log
+dfx_runtime.txt
 
 # Synthesis & Implementation outputs
 *.dcp
