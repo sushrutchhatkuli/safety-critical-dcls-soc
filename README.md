@@ -248,18 +248,18 @@ $$\text{SPFM} = \frac{N_{\text{detected}}}{N_{\text{total}}} = \frac{500}{500} =
 
 ## Physical Implementation & FPGA Timing
 
-The design was synthesized for an **AMD Xilinx Artix-7 FPGA (`xc7a35tcsg324-1`)** using **AMD Vivado 2025.1**:
+The design was synthesized for an **AMD Xilinx Artix-7 FPGA (`xc7a100tcsg324-1`)** using **AMD Vivado 2025.1**:
 
-| Parameter / Resource | Available on Artix-7 | Used by DCLS SoC | Utilization % / Slack |
-| :--- | :--- | :--- | :--- |
-| **System Clock Frequency** | $100.0\text{ MHz}$ ($10.0\text{ ns}$) | **$100.0\text{ MHz}$** | **CLOSED** |
-| **Worst Negative Slack (WNS)** | $> 0.000\text{ ns}$ | **$+2.009\text{ ns}$** | **MET (Positive)** |
-| **Worst Hold Slack (WHS)** | $> 0.000\text{ ns}$ | **$+0.142\text{ ns}$** | **MET (Positive)** |
-| **Inferred Latches** | $0$ | **0 Latches** | **100% Clean** |
-| **LUTs (Look-Up Tables)** | 20,800 | ~7,450 | ~35.8% |
-| **Flip-Flops (Registers)** | 41,600 | ~4,820 | ~11.6% |
-| **Block RAM (BRAM 36Kb)** | 50 | 8 | 16.0% |
-| **DSP48E1 Math Slices** | 90 | 4 | 4.4% |
+| Parameter / Resource | Available on Artix-7 100T | Used by DCLS SoC | Utilization % / Slack | Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **System Clock Frequency** | $100.0\text{ MHz}$ ($10.0\text{ ns}$) | **$100.0\text{ MHz}$** | **CLOSED** | PASSED |
+| **Worst Negative Slack (WNS)** | $> 0.000\text{ ns}$ | **$+5.031\text{ ns}$** | **MET (Positive)** | PASSED |
+| **Worst Hold Slack (WHS)** | $> 0.000\text{ ns}$ | **$+0.045\text{ ns}$** | **MET (Positive)** | PASSED |
+| **Worst Pulse Width Slack (WPWS)** | $> 0.000\text{ ns}$ | **$+4.500\text{ ns}$** | **MET (Positive)** | PASSED |
+| **Failing Endpoints** | $0$ | **$0$ / $66,307$** | **0.0%** | PASSED |
+| **Inferred Latches** | $0$ | **0 Latches** | **100% Clean** | PASSED |
+| **Slice LUTs (Logic)** | 63,400 | 201 | 0.32% | PASSED |
+| **Slice Registers (Flip-Flops)** | 126,800 | 33,162 | 26.15% | PASSED |
 
 ---
 
@@ -267,32 +267,39 @@ The design was synthesized for an **AMD Xilinx Artix-7 FPGA (`xc7a35tcsg324-1`)*
 
 ### Prerequisites
 - **AMD Vivado**: Version 2020.2 or newer (tested on Vivado 2025.1) with `xvlog`, `xelab`, and `xsim` available.
-- **RISC-V GCC**: `riscv64-unknown-elf-gcc` for compiling bare-metal safety firmware.
-- **Python**: Version 3.10 or newer (for regression runner and log parsing).
-- **Git**: Version 2.25 or newer.
+- **Python**: Version 3.10 or newer (for self-contained RV32I assembler).
+- **PowerShell / Windows Command Prompt**: Windows PowerShell 5.1+ or pwsh.
 
 ### Copy-Paste Reproduction Commands
 
-#### 1. Clone the Repository
+#### 1. Phase 2: Dual-Core Temporal Diversity Wrapper
 ```powershell
-git clone https://github.com/sushrutchhatkuli/safety-critical-dcls-soc.git
-cd safety-critical-dcls-soc
+.\scripts\run_tb_dcls_wrapper.bat
 ```
 
-#### 2. Verify RTL Syntax with Vivado xvlog
+#### 2. Phase 3: Combinational Comparator & Zero-Cycle Bus Firewall
 ```powershell
-& "C:\Xilinx\2025.1\Vivado\bin\xvlog.bat" -sv -i rtl/core -i rtl/uart `
-    (Get-ChildItem rtl/core/*.sv).FullName `
-    (Get-ChildItem rtl/bus/*.sv).FullName `
-    (Get-ChildItem rtl/accel/*.sv).FullName `
-    rtl/uart/uart_pkg.sv `
-    (Get-ChildItem rtl/uart/*.sv | Where-Object { $_.Name -ne 'uart_pkg.sv' }).FullName
+.\scripts\run_tb_comparator_firewall.bat
 ```
 
-#### 3. Run FPGA Synthesis in Batch Mode
+#### 3. Phase 4: Fault Control Unit & Top-Level SoC Integration
 ```powershell
-cd synth
-vivado -mode batch -source synth.tcl
+.\scripts\run_tb_safety_soc_top.bat
+```
+
+#### 4. Phase 5: Bare-Metal ABS Safety Firmware Verification
+```powershell
+.\scripts\run_tb_abs_firmware.bat
+```
+
+#### 5. Phase 6: Automated Fault Injection Campaign (100% SPFM)
+```powershell
+.\scripts\run_tb_fault_injection.bat
+```
+
+#### 6. Phase 7: Physical FPGA Batch Synthesis (Vivado Artix-7)
+```powershell
+.\scripts\run_synth.bat
 ```
 
 ---
@@ -302,22 +309,40 @@ vivado -mode batch -source synth.tcl
 ```
 safety-critical-dcls-soc/
 ├── rtl/
-│   ├── core/                  # 5-Stage RV32I Processor RTL
+│   ├── core/                  # 5-Stage RV32I Processor Core RTL
 │   ├── bus/                   # AXI4-Lite Crossbar, Master Bridge, RAM Controllers
 │   ├── accel/                 # 4-MAC Q8.8 Matrix Safety Math Accelerator
-│   ├── uart/                  # AXI4-Lite UART with Dual 16-Word FIFOs
-│   ├── dcls/                  # Dual-Core Wrapper, Shift Delay, Comparator & Firewall
-│   └── safety_soc_top.sv      # Full System-on-Chip Top-Level Module
+│   ├── uart/                  # AXI4-Lite UART with Dual 16-Word Circular FIFOs
+│   ├── dcls/                  # DCLS Core Wrapper, Shift Delay, Comparator & FCU
+│   └── safety_soc_top.sv      # Full System-on-Chip Top-Level Integration
 ├── tb/
-│   ├── tb_dcls_wrapper.sv     # 2-Cycle Phase Offset Unit Testbench
-│   └── tb_fault_injector.sv   # Monte Carlo Random SEU Injection & SVA Scorecard
+│   ├── tb_dcls_wrapper.sv     # Phase 2: 2-Cycle Temporal Diversity Offset TB
+│   ├── tb_comparator_firewall.sv # Phase 3: Zero-Cycle Firewall Clamping TB
+│   ├── tb_dcls_fcu.sv         # Phase 4: Autonomous Blackbox Crash Telemetry TB
+│   ├── tb_safety_soc_top.sv   # Phase 4: Full SoC Integration TB
+│   ├── tb_abs_firmware.sv     # Phase 5: Bare-Metal ABS Safety Firmware TB
+│   └── tb_fault_injection_campaign.sv # Phase 6: SVA Fault Injection Campaign (100% SPFM)
 ├── sw/
-│   ├── boot.S                 # RV32I Startup Assembly & Trap Vectors
+│   ├── abs_safety_app.S       # Automotive Anti-Lock Braking Application Source
+│   ├── rv32i_asm.py           # Self-Contained Pure Python RV32I Assembler
+│   ├── imem.mem               # Assembled RV32I Machine Code ($readmemh format)
+│   ├── boot.S                 # Low-Level Boot Code and Vector Tables
 │   ├── uart.c / uart.h        # Bare-Metal Telemetry Driver
-│   └── safety_ctrl.c          # Anti-Lock Braking System (ABS) Control Algorithm
+│   ├── accel.c / accel.h      # Matrix Accelerator Driver
+│   ├── main.c                 # C Safety Application Control Loop
+│   └── link.ld                # Linker Script for On-Chip RAM
 ├── synth/
-│   ├── synth.tcl              # Automated Vivado Synthesis & Implementation Script
-│   └── timing_constraints.xdc # 100 MHz Timing Constraints
+│   ├── synth.tcl              # Automated Vivado Batch Synthesis Script
+│   └── constraints.xdc        # 100 MHz Timing & Pin Constraints
+├── scripts/
+│   ├── compile_all.ps1 / .bat # Phase 1: All-IP Compilation Checkers
+│   ├── run_tb_dcls_wrapper.ps1 / .bat
+│   ├── run_tb_comparator_firewall.ps1 / .bat
+│   ├── run_tb_dcls_fcu.ps1 / .bat
+│   ├── run_tb_safety_soc_top.ps1 / .bat
+│   ├── run_tb_abs_firmware.ps1 / .bat
+│   ├── run_tb_fault_injection.ps1 / .bat
+│   └── run_synth.ps1 / .bat   # Phase 7: Batch FPGA Synthesis Runner
 ├── docs/                      # Technical Documentation & Obsidian Knowledge Base
 └── README.md
 ```
