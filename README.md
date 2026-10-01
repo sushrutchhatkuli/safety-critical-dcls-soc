@@ -11,20 +11,38 @@
 
 ---
 
-## System Architecture & Operational Theory
+## The Big Picture: Why This Project Exists
 
-The architecture provides an ASIL-D fault-tolerant execution cluster targeted at high-integrity automotive and avionics applications (steer-by-wire, autonomous emergency braking, and flight surface management). The design enforces deterministic fail-silent semantics: physical silicon faults must be detected, isolated, and documented before corrupted operands can escape across system interconnect boundaries.
+Modern cars and planes rely on microchips to make life-or-death decisions: steering, emergency braking, throttle control, and flight surfaces.
 
-### Key Architectural Highlights
+However, microchips operate in a harsh physical world. Every day, microchips are struck by high-energy particles from cosmic rays and atmospheric neutrons, or experience brief electrical voltage drops when heavy electric motors kick in.
 
-| Architectural Feature | Silicon Implementation | Functional Safety Rationale |
-| :--- | :--- | :--- |
-| **Dual-Core Redundancy** | Dual synthesizable 5-stage RV32I cores | Eliminates single points of failure at the processing element level. |
-| **Temporal Diversity** | 2-cycle input/output shift registers ($\Delta t = 2$) | Mitigates Common Cause Failures (CCF) by decorrelating spatial disturbances (voltage droops, EMI). |
-| **Zero-Cycle Bus Isolation** | Combinational active-low gating ($< 1.0\text{ ns}$) | Precludes corrupt memory latching within the exact cycle divergence is identified. |
-| **Hardwired Telemetry FSM** | Autonomous context capture + circular UART FIFO | Streams diagnostic crash signatures (`fault_pc`, mismatch mask) without reliance on CPU software. |
-| **Domain-Specific Safety Engine** | Memory-mapped 4-MAC Q8.8 matrix coprocessor | Offloads real-time vehicle deceleration calculations and wheel-slip math from CPU software. |
-| **Microsecond Containment** | Total hardware reaction latency $\le 20.8\text{ ns}$ | Consumes negligible fraction of automotive Fault Tolerant Time Intervals ($\text{FTTI} \approx 10\text{--}20\text{ ms}$). |
+When a particle hits a microscopic transistor, it can flip a binary bit from `0` to `1` or from `1` to `0`. This is called a **Single Event Upset (SEU)**.
+
+### Why Software Alone Cannot Solve This
+If a bit flips inside the processor's Program Counter, ALU, or register file, the processor itself becomes corrupted:
+- An instruction to **"Brake"** can turn into **"Accelerate"**.
+- A sensor calculation verifying safe stopping distance can read random garbage.
+- Software error checks fail because the CPU running the checks is already compromised.
+
+To build vehicles that comply with the highest safety standard—**ISO 26262 ASIL-D**—safety must be enforced directly in physical hardware at the silicon gate level.
+
+This project implements the industry standard solution used in aerospace and automotive silicon (such as Infineon AURIX and Texas Instruments Hercules): **Dual-Core Lockstep (DCLS) with Temporal Diversity**.
+
+---
+
+## How It Works in Plain English
+
+The system guards against hardware corruption through four clear mechanisms:
+
+1. **Two Cores Run in Lockstep, Staggered by 2 Cycles**:
+   Instead of trusting one processor, we run two identical 32-bit RISC-V cores side by side: a **Master Core** and a **Shadow Core**. To prevent a single electrical shock or electromagnetic pulse from flipping the same bit in both cores at the same instant (a Common Cause Failure), the Shadow Core runs the exact same code **two clock cycles behind** the Master Core.
+2. **Every Output is Checked Every Cycle**:
+   A dedicated hardware comparator inspects every address, data word, and control signal leaving both cores on every single clock edge.
+3. **Instant Zero-Cycle Firewall Clamping**:
+   The moment the comparator detects even a single bit of difference between the two cores, a hardware firewall instantly closes the memory and peripheral bus in **less than 1 nanosecond**. Corrupted commands can never reach the motors, brakes, or external RAM.
+4. **Autonomous Blackbox Telemetry (No Software Needed)**:
+   Because the CPU is faulty, we do not ask software to log the crash. Instead, a dedicated hardware state machine freezes the diagnostic context (corrupted program counter, mismatch bits, and timestamp) and pushes an 8-byte crash packet directly into a circular UART FIFO to stream to an external flight recorder.
 
 ---
 
@@ -98,28 +116,28 @@ This SoC brings together and validates two existing open-source hardware reposit
 
 ### 1. The 2-Cycle Temporal Diversity Stagger ($\Delta t = 2$)
 
-#### Common Cause Failure (CCF) Vulnerability in Synchronous Channels
-When two identical processing cores execute synchronously on identical clock edges, localized physical phenomena—such as electromagnetic interference (EMI) or power distribution network (PDN) voltage droops—can induce identical bit-flips across both cores concurrently. In a conventional dual-redundant system, a comparator evaluating identical erroneous states will fail to flag divergence, allowing corrupted data to reach downstream control stages.
+#### The Problem: Common Cause Failure (CCF)
+If two identical cores run in step on the exact same clock cycle, a single electromagnetic pulse (EMP) or voltage droop on the power rail can flip the exact same bit in both cores at the same time. A naive comparator checking both cores would see them agree on the corrupted value and pass it through.
 
-#### Temporal Diversity Formulation & Shift-Register Synchronization
-To decouple common-mode electrical transients, the input stream to the Shadow Core is delayed by $\Delta t = 2$ clock cycles via a two-stage shift register:
+#### The Solution: Staggered Execution
+To prevent this, the inputs to the Shadow Core pass through a 2-stage shift register (delayed by 2 clock cycles):
 
 $$\text{Inputs}_{\text{shadow}}(t) = \text{Inputs}_{\text{master}}(t - 2)$$
 
-To re-align bus states for cycle-accurate comparison, the outgoing transactions of the Master Core are buffered through a matching two-stage delay pipeline:
+The bus outputs of the Master Core are also delayed by 2 clock cycles to re-align with the Shadow Core:
 
 $$\text{Outputs}_{\text{delayed}}(t) = \text{Outputs}_{\text{master}}(t - 2)$$
 
-The hardware comparator continuously monitors bus equality at each clock edge:
+The comparator evaluates:
 
 $$\text{Fault}(t) = \left( \text{Outputs}_{\text{delayed}}(t) \ne \text{Outputs}_{\text{shadow}}(t) \right)$$
 
-#### Deterministic Fault Containment Dynamics
-Consider an electrical disturbance striking the silicon die at clock cycle $t_0$:
-- The Master Core is executing instruction $K$ and experiences state corruption.
-- The Shadow Core is executing instruction $K - 2$, well prior to instruction $K$.
-- When the Master Core's result reaches the comparator stage at cycle $t_0 + 2$, the Shadow Core reaches instruction $K$ driven by clean, delayed inputs captured prior to the event.
-- The comparator detects state divergence immediately at $t_0 + 2$, isolating the fault within two clock cycles.
+#### Why 100% Detection is Guaranteed
+If a transient electrical glitch strikes at time $t_0$:
+- The Master Core is on instruction $K$ and gets corrupted.
+- The Shadow Core is on instruction $K - 2$.
+- When the Master Core's result arrives at the comparator at time $t_0 + 2$, the Shadow Core is now executing instruction $K$ using clean inputs from two cycles earlier.
+- The comparator detects the mismatch immediately at $t_0 + 2$.
 
 ```
 Cycle:              0      1      2      3      4      5      6
@@ -135,16 +153,16 @@ Comparator:         [---]  [---]  [MATCH] [MATCH] [MATCH] [MATCH]
 
 ---
 
-### 2. Zero-Cycle Combinational Bus Firewall & Write Clamping
+### 2. Zero-Cycle Bus Firewall
 
-In safety-critical actuation pathways, sequential fault registration introduces a single-cycle latency window during which corrupted bus writes could be acknowledged and latched by memory controllers or external motor drivers.
+If a safety system waits even 1 clock cycle to register a fault before blocking bus writes, the corrupted value has already been written into memory or latched by an external actuator driver.
 
-To eliminate latency escapes, the bus firewall implements combinational active-low write gating with sub-nanosecond propagation delay ($T_{pd} < 1.0\text{ ns}$):
+The firewall uses pure combinational logic to gate memory write enables in **under 1 nanosecond**:
 
 $$\text{Mismatch} = (\text{AWADDR}_m \ne \text{AWADDR}_s) \lor (\text{WDATA}_m \ne \text{WDATA}_s) \lor (\text{WSTRB}_m \ne \text{WSTRB}_s) \lor (\text{WE}_m \ne \text{WE}_s)$$
 
 ```systemverilog
-// Zero-Cycle Combinational Clamping Logic
+// Combinational gating (< 1.0 ns propagation delay)
 assign fault_isolate        = any_mismatch | fault_latched;
 assign protected_dmem_we    = m_dmem_we_delayed    & ~fault_isolate;
 assign protected_dmem_re    = m_dmem_re_delayed    & ~fault_isolate;
@@ -155,12 +173,12 @@ assign protected_dmem_strb  = fault_isolate ? 4'h0  : m_dmem_strb_delayed;
 
 ---
 
-### 3. Fault Control Unit (FCU) & Autonomous Diagnostic Telemetry
+### 3. Fault Control Unit (FCU) & Blackbox Telemetry
 
-Upon divergence confirmation, the Fault Control Unit (FCU) executes an autonomous hardware-sequenced containment routine:
-1. **Actuator Interlock Assertion**: Drives the dedicated physical pin `safe_state_out = 1'b1` within $< 10\text{ ns}$ to trip external hardware interlocks.
-2. **Context Freezing**: Atomically latches the divergence Program Counter (`fault_pc`), mismatch bitmask vector (`fault_bits`), and cycle timestamp into hardware shadow registers.
-3. **Hardware Telemetry Streaming**: Bypassing software execution entirely, a dedicated state machine pushes an 8-byte diagnostic frame into the UART circular FIFO over 8 consecutive clock cycles:
+When a mismatch occurs, the Fault Control Unit executes a deterministic hardware sequence:
+1. **Physical Actuator Disconnect**: Asserts the external pin `safe_state_out = 1'b1` within $< 10\text{ ns}$ to trip vehicle safety interlocks.
+2. **Context Freeze**: Captures the exact program counter (`fault_pc`), mismatch vector (`fault_bits`), and hardware timestamp into shadow registers.
+3. **Autonomous Telemetry Stream**: The FCU pushes an 8-byte diagnostic frame directly into the UART transmit FIFO across 8 clock cycles without running any software:
 
 ```
 +----------+----------+----------+----------+----------+----------+----------+----------+
@@ -171,7 +189,7 @@ Upon divergence confirmation, the Fault Control Unit (FCU) executes an autonomou
 +----------+----------+----------+----------+----------+----------+----------+----------+
 ```
 
-The UART transmitter autonomously serializes the captured context over `uart_txd` at 115,200 baud to the external flight data recorder, preserving post-mortem diagnostic observability.
+The UART transmitter autonomously shifts out the data over `uart_txd` at 115,200 baud to the vehicle flight data recorder.
 
 ---
 
