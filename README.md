@@ -11,38 +11,38 @@
 
 ---
 
-## The Big Picture: Why This Project Exists
+## Table of Contents
 
-Modern cars and planes rely on microchips to make life-or-death decisions: steering, emergency braking, throttle control, and flight surfaces.
-
-However, microchips operate in a harsh physical world. Every day, microchips are struck by high-energy particles from cosmic rays and atmospheric neutrons, or experience brief electrical voltage drops when heavy electric motors kick in.
-
-When a particle hits a microscopic transistor, it can flip a binary bit from `0` to `1` or from `1` to `0`. This is called a **Single Event Upset (SEU)**.
-
-### Why Software Alone Cannot Solve This
-If a bit flips inside the processor's Program Counter, ALU, or register file, the processor itself becomes corrupted:
-- An instruction to **"Brake"** can turn into **"Accelerate"**.
-- A sensor calculation verifying safe stopping distance can read random garbage.
-- Software error checks fail because the CPU running the checks is already compromised.
-
-To build vehicles that comply with the highest safety standard—**ISO 26262 ASIL-D**—safety must be enforced directly in physical hardware at the silicon gate level.
-
-This project implements the industry standard solution used in aerospace and automotive silicon (such as Infineon AURIX and Texas Instruments Hercules): **Dual-Core Lockstep (DCLS) with Temporal Diversity**.
+- [Overview](#overview)
+- [System Architecture](#system-architecture)
+- [Key Architectural Highlights](#key-architectural-highlights)
+- [Detailed Architectural Subsystems](#detailed-architectural-subsystems)
+  - [1. Temporal Diversity & Common Cause Failure Mitigation](#1-temporal-diversity--common-cause-failure-mitigation)
+  - [2. Zero-Cycle Combinational Bus Firewall](#2-zero-cycle-combinational-bus-firewall)
+  - [3. Fault Control Unit & Autonomous Diagnostic Telemetry](#3-fault-control-unit--autonomous-diagnostic-telemetry)
+  - [4. System Memory Map & AXI4-Lite Interconnect](#4-system-memory-map--axi4-lite-interconnect)
+- [IP Lineage & Repository Traceability](#ip-lineage--repository-traceability)
+- [Verification & Fault Injection Suite](#verification--fault-injection-suite)
+- [Physical Implementation & FPGA Timing](#physical-implementation--fpga-timing)
+- [Prerequisites & Build Guide](#prerequisites--build-guide)
+- [Repository Organization](#repository-organization)
+- [Documentation Index](#documentation-index)
+- [License & Author](#license--author)
 
 ---
 
-## How It Works in Plain English
+## Overview
 
-The system guards against hardware corruption through four clear mechanisms:
+In safety-critical control environments—such as autonomous vehicle braking, steer-by-wire, avionics flight surfaces, and biomedical life support—microcontrollers operate in environments subject to atmospheric radiation, cosmic ray neutrons, and localized electrical transients.
 
-1. **Two Cores Run in Lockstep, Staggered by 2 Cycles**:
-   Instead of trusting one processor, we run two identical 32-bit RISC-V cores side by side: a **Master Core** and a **Shadow Core**. To prevent a single electrical shock or electromagnetic pulse from flipping the same bit in both cores at the same instant (a Common Cause Failure), the Shadow Core runs the exact same code **two clock cycles behind** the Master Core.
-2. **Every Output is Checked Every Cycle**:
-   A dedicated hardware comparator inspects every address, data word, and control signal leaving both cores on every single clock edge.
-3. **Instant Zero-Cycle Firewall Clamping**:
-   The moment the comparator detects even a single bit of difference between the two cores, a hardware firewall instantly closes the memory and peripheral bus in **less than 1 nanosecond**. Corrupted commands can never reach the motors, brakes, or external RAM.
-4. **Autonomous Blackbox Telemetry (No Software Needed)**:
-   Because the CPU is faulty, we do not ask software to log the crash. Instead, a dedicated hardware state machine freezes the diagnostic context (corrupted program counter, mismatch bits, and timestamp) and pushes an 8-byte crash packet directly into a circular UART FIFO to stream to an external flight recorder.
+These physical events induce Single Event Upsets (SEUs): transient bit-flips in flip-flops, program counters, and arithmetic units. In drive-by-wire applications, an uncontained bit-flip can alter critical control state—such as converting a brake demand into acceleration. Traditional software assertions cannot resolve this condition because the underlying silicon executing the instructions is compromised.
+
+To achieve compliance with the highest functional safety level, ISO 26262 ASIL-D (Automotive Safety Integrity Level D), this project implements a Dual-Core Lockstep (DCLS) System-on-Chip (SoC) around a 32-bit RISC-V (RV32I) processing pipeline. 
+
+The architecture guarantees deterministic, fail-silent protection through hardware:
+- A 2-cycle temporal stagger between redundant cores to mitigate Common Cause Failures (CCF).
+- A combinational bus firewall that gates corrupted write commands in under 1 nanosecond.
+- An autonomous hardware state machine that freezes diagnostic context and streams a crash frame to an external flight recorder via a circular UART buffer without CPU execution.
 
 ---
 
@@ -98,46 +98,38 @@ flowchart TD
 
 ---
 
-## IP Traceability & Lineage
+## Key Architectural Highlights
 
-This SoC brings together and validates two existing open-source hardware repositories:
-
-1. [**`rv32i-axi-accelerator-uvm`**](https://github.com/sushrutchhatkuli/rv32i-axi-accelerator-uvm):
-   - **5-Stage RV32I Processor Core**: Pipelined RISC-V CPU with hazard unit, forwarding logic, branch predictor, and register file. Instantiated twice to form the Master and Shadow channels.
-   - **Custom Hardware Accelerator**: 4-MAC Q8.8 fixed-point coprocessor mapped via AXI at `0x2000_0000` for high-speed vehicle safety math (such as wheel slip calculations).
-   - **Bus Infrastructure**: AXI4-Lite master bridge and synchronous RAM controllers.
-2. [**`AXI4-Lite-UART-Peripheral-FIFO-Buffer`**](https://github.com/sushrutchhatkuli/AXI4-Lite-UART-Peripheral-FIFO-Buffer):
-   - **High-Reliability UART Peripheral**: Complete AXI4-Lite serial controller with 16X baud oversampling, Tick 7 center-sampling, and dual 16-word circular FIFOs (149 passing assertions, 224.3 MHz Artix-7 timing closure).
-   - **Role in this SoC**: Functions as the dedicated blackbox diagnostic logger, receiving emergency context dumps directly from hardware when a core fault trips.
+| Architectural Feature | Silicon Implementation | Functional Safety Rationale |
+| :--- | :--- | :--- |
+| **Dual-Core Redundancy** | Dual synthesizable 5-stage RV32I cores | Eliminates single points of failure at the processing element level. |
+| **Temporal Diversity** | 2-cycle input/output shift registers ($\Delta t = 2$) | Mitigates Common Cause Failures (CCF) by decorrelating spatial disturbances (voltage droops, EMI). |
+| **Zero-Cycle Bus Isolation** | Combinational active-low gating ($< 1.0\text{ ns}$) | Precludes corrupt memory latching within the exact cycle divergence is identified. |
+| **Hardwired Telemetry FSM** | Autonomous context capture + circular UART FIFO | Streams diagnostic crash signatures (`fault_pc`, mismatch mask) without reliance on CPU software. |
+| **Domain-Specific Safety Engine** | Memory-mapped 4-MAC Q8.8 matrix coprocessor | Offloads real-time vehicle deceleration calculations and wheel-slip math from CPU software. |
+| **Microsecond Containment** | Total hardware reaction latency $\le 20.8\text{ ns}$ | Consumes negligible fraction of automotive Fault Tolerant Time Intervals ($\text{FTTI} \approx 10\text{--}20\text{ ms}$). |
 
 ---
 
-## Deep-Dive Engineering Concepts
+## Detailed Architectural Subsystems
 
-### 1. The 2-Cycle Temporal Diversity Stagger ($\Delta t = 2$)
+### 1. Temporal Diversity & Common Cause Failure Mitigation
 
-#### The Problem: Common Cause Failure (CCF)
-If two identical cores run in step on the exact same clock cycle, a single electromagnetic pulse (EMP) or voltage droop on the power rail can flip the exact same bit in both cores at the same time. A naive comparator checking both cores would see them agree on the corrupted value and pass it through.
+When two redundant cores execute synchronously on identical clock edges, a shared physical transient—such as an electromagnetic pulse (EMP) or voltage droop on the power rail—can induce the same bit-flip in both cores simultaneously. A standard comparator would evaluate matching corrupt states as valid, allowing erroneous data to propagate.
 
-#### The Solution: Staggered Execution
-To prevent this, the inputs to the Shadow Core pass through a 2-stage shift register (delayed by 2 clock cycles):
+To eliminate common-mode vulnerabilities, the input streams to the Shadow Core pass through a two-stage shift register (delayed by 2 clock cycles):
 
 $$\text{Inputs}_{\text{shadow}}(t) = \text{Inputs}_{\text{master}}(t - 2)$$
 
-The bus outputs of the Master Core are also delayed by 2 clock cycles to re-align with the Shadow Core:
+The bus transactions of the Master Core are passed through a matching two-stage pipeline to re-align with the Shadow Core:
 
 $$\text{Outputs}_{\text{delayed}}(t) = \text{Outputs}_{\text{master}}(t - 2)$$
 
-The comparator evaluates:
+The hardware comparator continuously verifies bus equivalence:
 
 $$\text{Fault}(t) = \left( \text{Outputs}_{\text{delayed}}(t) \ne \text{Outputs}_{\text{shadow}}(t) \right)$$
 
-#### Why 100% Detection is Guaranteed
-If a transient electrical glitch strikes at time $t_0$:
-- The Master Core is on instruction $K$ and gets corrupted.
-- The Shadow Core is on instruction $K - 2$.
-- When the Master Core's result arrives at the comparator at time $t_0 + 2$, the Shadow Core is now executing instruction $K$ using clean inputs from two cycles earlier.
-- The comparator detects the mismatch immediately at $t_0 + 2$.
+When an electrical disturbance strikes at cycle $t_0$, the Master Core is at instruction $K$ while the Shadow Core is at instruction $K - 2$. When the Master Core's result reaches the comparator at cycle $t_0 + 2$, the Shadow Core executes instruction $K$ using clean, delayed inputs captured prior to the event. The comparator flags state divergence immediately.
 
 ```
 Cycle:              0      1      2      3      4      5      6
@@ -151,18 +143,16 @@ Shadow PC:          [---]  [---]  [PC0]  [PC1]  [PC2]  [PC3]  (Aligned)
 Comparator:         [---]  [---]  [MATCH] [MATCH] [MATCH] [MATCH]
 ```
 
----
+### 2. Zero-Cycle Combinational Bus Firewall
 
-### 2. Zero-Cycle Bus Firewall
+Sequential fault registration introduces a single-clock latency window during which corrupt data can be acknowledged and stored into memory or external actuator drivers.
 
-If a safety system waits even 1 clock cycle to register a fault before blocking bus writes, the corrupted value has already been written into memory or latched by an external actuator driver.
-
-The firewall uses pure combinational logic to gate memory write enables in **under 1 nanosecond**:
+To eliminate latency escapes, the bus firewall uses combinational gating with sub-nanosecond propagation delay ($T_{pd} < 1.0\text{ ns}$):
 
 $$\text{Mismatch} = (\text{AWADDR}_m \ne \text{AWADDR}_s) \lor (\text{WDATA}_m \ne \text{WDATA}_s) \lor (\text{WSTRB}_m \ne \text{WSTRB}_s) \lor (\text{WE}_m \ne \text{WE}_s)$$
 
 ```systemverilog
-// Combinational gating (< 1.0 ns propagation delay)
+// Zero-Cycle Combinational Clamping Logic
 assign fault_isolate        = any_mismatch | fault_latched;
 assign protected_dmem_we    = m_dmem_we_delayed    & ~fault_isolate;
 assign protected_dmem_re    = m_dmem_re_delayed    & ~fault_isolate;
@@ -171,14 +161,12 @@ assign protected_dmem_wdata = fault_isolate ? 32'h0 : m_dmem_wdata_delayed;
 assign protected_dmem_strb  = fault_isolate ? 4'h0  : m_dmem_strb_delayed;
 ```
 
----
+### 3. Fault Control Unit & Autonomous Diagnostic Telemetry
 
-### 3. Fault Control Unit (FCU) & Blackbox Telemetry
-
-When a mismatch occurs, the Fault Control Unit executes a deterministic hardware sequence:
-1. **Physical Actuator Disconnect**: Asserts the external pin `safe_state_out = 1'b1` within $< 10\text{ ns}$ to trip vehicle safety interlocks.
-2. **Context Freeze**: Captures the exact program counter (`fault_pc`), mismatch vector (`fault_bits`), and hardware timestamp into shadow registers.
-3. **Autonomous Telemetry Stream**: The FCU pushes an 8-byte diagnostic frame directly into the UART transmit FIFO across 8 clock cycles without running any software:
+Upon divergence confirmation, the Fault Control Unit (FCU) executes an autonomous hardware-sequenced containment routine:
+1. **Actuator Interlock Assertion**: Drives the dedicated physical pin `safe_state_out = 1'b1` within $< 10\text{ ns}$ to trip external hardware interlocks.
+2. **Context Freezing**: Atomically latches the divergence Program Counter (`fault_pc`), mismatch bitmask vector (`fault_bits`), and cycle timestamp into hardware shadow registers.
+3. **Hardware Telemetry Streaming**: Bypassing software execution entirely, a dedicated state machine pushes an 8-byte diagnostic frame into the UART circular FIFO over 8 consecutive clock cycles:
 
 ```
 +----------+----------+----------+----------+----------+----------+----------+----------+
@@ -189,13 +177,11 @@ When a mismatch occurs, the Fault Control Unit executes a deterministic hardware
 +----------+----------+----------+----------+----------+----------+----------+----------+
 ```
 
-The UART transmitter autonomously shifts out the data over `uart_txd` at 115,200 baud to the vehicle flight data recorder.
+The UART transmitter autonomously serializes the captured context over `uart_txd` at 115,200 baud to the external flight data recorder, preserving post-mortem diagnostic observability.
 
----
+### 4. System Memory Map & AXI4-Lite Interconnect
 
-## Memory Map
-
-The system uses an AXI4-Lite crossbar with dedicated address ranges:
+The 32-bit address space is partitioned to prevent aliasing and provide isolated memory windows:
 
 | Base Address | End Address | Size | Target Module | Function |
 | :--- | :--- | :--- | :--- | :--- |
@@ -207,35 +193,62 @@ The system uses an AXI4-Lite crossbar with dedicated address ranges:
 
 ---
 
-## ISO 26262 ASIL-D Verification Scorecard
+## IP Lineage & Repository Traceability
 
-The system was verified with a SystemVerilog fault-injection testbench (`tb/tb_fault_injector.sv`) that introduced **500+ randomized bit-flips** into:
+This SoC integrates and validates two established open-source hardware repositories:
+
+1. [**`rv32i-axi-accelerator-uvm`**](https://github.com/sushrutchhatkuli/rv32i-axi-accelerator-uvm):
+   - **Processor IP**: 5-stage pipelined RV32I RISC-V core with hazard detection, bypass forwarding, and branch resolution. Instantiated twice to form the Master and Shadow channels.
+   - **Accelerator IP**: 4-MAC Q8.8 fixed-point coprocessor mapped at `0x2000_0000` executing real-time actuator dynamics and wheel-slip modeling.
+   - **Bus Components**: AXI4-Lite master bridge and synchronous RAM controllers.
+2. [**`AXI4-Lite-UART-Peripheral-FIFO-Buffer`**](https://github.com/sushrutchhatkuli/AXI4-Lite-UART-Peripheral-FIFO-Buffer):
+   - **Telemetry IP**: Synthesizable AXI4-Lite UART peripheral featuring 16X oversampling, Tick 7 center-sampling, and dual 16-word circular FIFOs (149 passing assertions, 224.3 MHz Artix-7 timing closure).
+   - **Role in SoC**: Dedicated blackbox flight recorder link streaming crash frames autonomously upon fault detection.
+
+---
+
+## Verification & Fault Injection Suite
+
+The architecture was validated using a dedicated SystemVerilog fault-injection testbench (`tb/tb_fault_injector.sv`) executing **500+ randomized Monte Carlo fault campaigns** across:
 - The Program Counter (`if_pc`)
 - The General Purpose Register File (`x1` through `x31`)
-- The ALU arithmetic and logical result bus
+- The ALU arithmetic and logic result bus
 - The branch decision comparator
 
-### Formal SystemVerilog Assertions (SVA):
-1. **Assertion 1 (Detection Latency)**: Any internal divergence between master and shadow triggers `fault_detected` within $\le 2\text{ clock cycles}$ ($20\text{ ns}$).
-2. **Assertion 2 (Zero Firewall Leaks)**: Zero corrupted write enables (`dmem_we`) ever reach RAM after a fault.
-3. **Assertion 3 (Telemetry Delivery)**: The exact corrupted PC and failure signature are transmitted through the UART FIFO.
+### Formal SystemVerilog Assertions (SVA)
 
-### Resulting Safety Metrics:
+```systemverilog
+// SVA Property 1: Fault detection latency must be <= 2 clock cycles
+property p_fault_detection_latency;
+    @(posedge clk) disable iff (!rst_n)
+    u_soc.u_dcls.any_mismatch |-> ##[0:2] u_soc.u_dcls.fault_latched;
+endproperty
+assert_latency: assert property (p_fault_detection_latency);
 
-| ISO 26262 Metric | ASIL-D Requirement | Measured in This SoC | Compliance Status |
+// SVA Property 2: Zero corrupted write enables reach RAM post-fault
+property p_zero_corrupted_writes;
+    @(posedge clk) disable iff (!rst_n)
+    u_soc.u_dcls.fault_latched |-> (u_soc.protected_dmem_we == 1'b0);
+endproperty
+assert_isolation: assert property (p_zero_corrupted_writes);
+```
+
+### Measured Safety Metrics
+
+| ISO 26262 Metric | ASIL-D Target | Measured Result | Status |
 | :--- | :--- | :--- | :--- |
 | **Single Point Fault Metric (SPFM)** | $> 99.0\%$ | **100.0% (500/500 faults)** | PASSED |
 | **Fault Detection Latency** | $< \text{FTTI}$ ($2.0\ \mu\text{s}$) | **$\le 20\text{ ns}$ (2 cycles)** | PASSED |
-| **Bus Clamping Speed** | $< 1\text{ clock cycle}$ | **$< 1.0\text{ ns}$ (Combinational)** | PASSED |
-| **Actuator Isolation Pin** | Instant response | **Asserted on clock edge** | PASSED |
+| **Bus Clamping Latency** | $< 1\text{ clock cycle}$ | **$< 1.0\text{ ns}$ (Combinational)** | PASSED |
+| **Actuator Isolation Pin** | Instant assertion | **Asserted on clock edge** | PASSED |
 
 $$\text{SPFM} = \frac{N_{\text{detected}}}{N_{\text{total}}} = \frac{500}{500} = \mathbf{100.0\%}$$
 
 ---
 
-## FPGA Physical Synthesis & Timing Closure
+## Physical Implementation & FPGA Timing
 
-The SoC was synthesized for an **AMD Xilinx Artix-7 FPGA (`xc7a35tcsg324-1`)** using **AMD Vivado 2025.1**:
+The design was synthesized for an **AMD Xilinx Artix-7 FPGA (`xc7a35tcsg324-1`)** using **AMD Vivado 2025.1**:
 
 | Parameter / Resource | Available on Artix-7 | Used by DCLS SoC | Utilization % / Slack |
 | :--- | :--- | :--- | :--- |
@@ -250,12 +263,46 @@ The SoC was synthesized for an **AMD Xilinx Artix-7 FPGA (`xc7a35tcsg324-1`)** u
 
 ---
 
-## Directory Structure
+## Prerequisites & Build Guide
+
+### Prerequisites
+- **AMD Vivado**: Version 2020.2 or newer (tested on Vivado 2025.1) with `xvlog`, `xelab`, and `xsim` available.
+- **RISC-V GCC**: `riscv64-unknown-elf-gcc` for compiling bare-metal safety firmware.
+- **Python**: Version 3.10 or newer (for regression runner and log parsing).
+- **Git**: Version 2.25 or newer.
+
+### Copy-Paste Reproduction Commands
+
+#### 1. Clone the Repository
+```powershell
+git clone https://github.com/sushrutchhatkuli/safety-critical-dcls-soc.git
+cd safety-critical-dcls-soc
+```
+
+#### 2. Verify RTL Syntax with Vivado xvlog
+```powershell
+& "C:\Xilinx\2025.1\Vivado\bin\xvlog.bat" -sv -i rtl/core -i rtl/uart `
+    (Get-ChildItem rtl/core/*.sv).FullName `
+    (Get-ChildItem rtl/bus/*.sv).FullName `
+    (Get-ChildItem rtl/accel/*.sv).FullName `
+    rtl/uart/uart_pkg.sv `
+    (Get-ChildItem rtl/uart/*.sv | Where-Object { $_.Name -ne 'uart_pkg.sv' }).FullName
+```
+
+#### 3. Run FPGA Synthesis in Batch Mode
+```powershell
+cd synth
+vivado -mode batch -source synth.tcl
+```
+
+---
+
+## Repository Organization
 
 ```
 safety-critical-dcls-soc/
 ├── rtl/
-│   ├── core/                  # 5-Stage RV32I Processor RTL (from rv32i-axi-accelerator-uvm)
+│   ├── core/                  # 5-Stage RV32I Processor RTL
 │   ├── bus/                   # AXI4-Lite Crossbar, Master Bridge, RAM Controllers
 │   ├── accel/                 # 4-MAC Q8.8 Matrix Safety Math Accelerator
 │   ├── uart/                  # AXI4-Lite UART with Dual 16-Word FIFOs
@@ -277,33 +324,27 @@ safety-critical-dcls-soc/
 
 ---
 
-## Quickstart & Simulation
+## Documentation Index
 
-### 1. Prerequisites
-- **AMD Vivado 2025.1** (or 2020.2+) with `xvlog`, `xelab`, and `xsim`.
-- **RISC-V GNU Toolchain** (`riscv64-unknown-elf-gcc`).
-- **Python 3.10+**.
+The `docs/` directory contains an interlinked Obsidian knowledge base detailing the technical foundations and mathematical derivations of this project:
 
-### 2. Compile RTL with Vivado `xvlog`
-```powershell
-& "C:\Xilinx\2025.1\Vivado\bin\xvlog.bat" -sv -i rtl/core -i rtl/uart `
-    (Get-ChildItem rtl/core/*.sv).FullName `
-    (Get-ChildItem rtl/bus/*.sv).FullName `
-    (Get-ChildItem rtl/accel/*.sv).FullName `
-    rtl/uart/uart_pkg.sv `
-    (Get-ChildItem rtl/uart/*.sv | Where-Object { $_.Name -ne 'uart_pkg.sv' }).FullName
-```
-
-### 3. Run FPGA Synthesis
-```powershell
-cd synth
-vivado -mode batch -source synth.tcl
-```
+- [Executive Summary & SEU Threat Model](docs/00%20-%20Foundations%20&%20Orientation/01_Executive_Summary_and_Problem_Formulation.md)
+- [ISO 26262 ASIL-D Standards & Metrics (SPFM, LFM, FTTI)](docs/01%20-%20ISO%2026262%20&%20Functional%20Safety%20Theory/01_ISO_26262_ASIL_D_Deep_Dive.md)
+- [Common Cause Failures & Temporal Diversity Proof](docs/01%20-%20ISO%2026262%20&%20Functional%20Safety%20Theory/02_Common_Cause_Failures_and_Temporal_Diversity.md)
+- [DCLS Core Wrapper & Shift Register Architecture](docs/02%20-%20Microarchitecture%20&%20Temporal%20Diversity/01_DCLS_Core_Wrapper_Architecture.md)
+- [Combinational Comparator & Zero-Cycle Bus Firewall](docs/03%20-%20DCLS%20Comparator%20&%20Bus%20Firewall/01_Combinational_Comparator_and_Zero_Cycle_Firewall.md)
+- [Fault Control Unit & Autonomous UART Telemetry](docs/04%20-%20Fault%20Control%20Unit%20&%20UART%20Telemetry/01_FCU_and_Blackbox_Telemetry_Logging.md)
+- [System Interconnect & Memory Map Architecture](docs/05%20-%20System%20Interconnect%20&%20IP%20Integration/01_Memory_Map_and_Interconnect_Architecture.md)
+- [Bare-Metal Safety Firmware & ABS Control Loop](docs/06%20-%20Bare-Metal%20Safety%20Firmware/01_Safety_Firmware_and_ABS_Control_Loop.md)
+- [Fault Injection Suite & 100% SPFM Scorecard](docs/07%20-%20Fault%20Injection%20&%20Verification%20Suite/01_Fault_Injection_and_ASIL_D_Verification.md)
+- [FPGA Physical Synthesis & Static Timing Analysis](docs/08%20-%20Physical%20Synthesis%20&%20Timing%20Closure/01_FPGA_Synthesis_and_Timing_Closure_Artix7.md)
+- [Phase-by-Phase Implementation Roadmap](docs/09%20-%20Step-by-Step%20Implementation%20Roadmap/01_Comprehensive_Phase_by_Phase_Execution_Plan.md)
 
 ---
 
-## Author & Acknowledgements
+## License & Author
 
 - **Author**: Sushrut Chhatkuli
 - **GitHub**: [github.com/sushrutchhatkuli](https://github.com/sushrutchhatkuli)
+- **License**: MIT License (see [LICENSE](LICENSE) for details)
 - **Reference Standard**: ISO 26262:2018 (Road vehicles — Functional safety, Part 5: Product development at the hardware level).
