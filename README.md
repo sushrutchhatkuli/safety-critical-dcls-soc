@@ -33,9 +33,9 @@
 
 ## Overview
 
-In safety-critical control environments—such as autonomous vehicle braking, steer-by-wire, avionics flight surfaces, and biomedical life support—microcontrollers operate in environments subject to atmospheric radiation, cosmic ray neutrons, and localized electrical transients.
+In safety-critical control environments (such as autonomous vehicle braking, steer-by-wire, avionics flight surfaces, and biomedical life support), microcontrollers operate in environments subject to atmospheric radiation, cosmic ray neutrons, and localized electrical transients.
 
-These physical events induce Single Event Upsets (SEUs): transient bit-flips in flip-flops, program counters, and arithmetic units. In drive-by-wire applications, an uncontained bit-flip can alter critical control state—such as converting a brake demand into acceleration. Traditional software assertions cannot resolve this condition because the underlying silicon executing the instructions is compromised.
+These physical events induce Single Event Upsets (SEUs): transient bit-flips in flip-flops, program counters, and arithmetic units. In drive-by-wire applications, an uncontained bit-flip can alter critical control states, such as converting a brake demand into acceleration. Traditional software assertions cannot resolve this condition because the underlying silicon executing the instructions is compromised.
 
 To achieve compliance with the highest functional safety level, ISO 26262 ASIL-D (Automotive Safety Integrity Level D), this project implements a Dual-Core Lockstep (DCLS) System-on-Chip (SoC) around a 32-bit RISC-V (RV32I) processing pipeline. 
 
@@ -107,7 +107,7 @@ flowchart TD
 | **Zero-Cycle Bus Isolation** | Combinational active-low gating ($< 1.0\text{ ns}$) | Precludes corrupt memory latching within the exact cycle divergence is identified. |
 | **Hardwired Telemetry FSM** | Autonomous context capture + circular UART FIFO | Streams diagnostic crash signatures (`fault_pc`, mismatch mask) without reliance on CPU software. |
 | **Domain-Specific Safety Engine** | Memory-mapped 4-MAC Q8.8 matrix coprocessor | Offloads real-time vehicle deceleration calculations and wheel-slip math from CPU software. |
-| **Microsecond Containment** | Total hardware reaction latency $\le 20.8\text{ ns}$ | Consumes negligible fraction of automotive Fault Tolerant Time Intervals ($\text{FTTI} \approx 10\text{--}20\text{ ms}$). |
+| **Microsecond Containment** | Total hardware reaction latency $\le 20.8\text{ ns}$ | Consumes negligible fraction of automotive Fault Tolerant Time Intervals ($\text{FTTI} \approx 10 to 20 ms$). |
 
 ---
 
@@ -115,7 +115,7 @@ flowchart TD
 
 ### 1. Temporal Diversity & Common Cause Failure Mitigation
 
-When two redundant cores execute synchronously on identical clock edges, a shared physical transient—such as an electromagnetic pulse (EMP) or voltage droop on the power rail—can induce the same bit-flip in both cores simultaneously. A standard comparator would evaluate matching corrupt states as valid, allowing erroneous data to propagate.
+When two redundant cores execute synchronously on identical clock edges, a shared physical transient (such as an electromagnetic pulse or power-rail voltage droop) can induce the same bit-flip in both cores simultaneously. A standard comparator would evaluate matching corrupt states as valid, allowing erroneous data to propagate.
 
 To eliminate common-mode vulnerabilities, the input streams to the Shadow Core pass through a two-stage shift register (delayed by 2 clock cycles):
 
@@ -347,4 +347,4 @@ The `docs/` directory contains an interlinked Obsidian knowledge base detailing 
 - **Author**: Sushrut Chhatkuli
 - **GitHub**: [github.com/sushrutchhatkuli](https://github.com/sushrutchhatkuli)
 - **License**: MIT License (see [LICENSE](LICENSE) for details)
-- **Reference Standard**: ISO 26262:2018 (Road vehicles — Functional safety, Part 5: Product development at the hardware level).
+- **Reference Standard**: ISO 26262:2018 (Road vehicles, Functional safety, Part 5: Product development at the hardware level).

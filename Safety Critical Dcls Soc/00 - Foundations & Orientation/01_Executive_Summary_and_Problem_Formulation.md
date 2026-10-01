@@ -90,7 +90,7 @@ If an SEU hits the **Stack Pointer (`sp`)** or **General Purpose Register (`x10`
 
 ## 3. The Industrial Response: Dual-Core Lockstep (DCLS)
 
-Leading semiconductor manufacturers developing ASIL-D solutions—such as **Infineon AURIX™ (TriCore TC3xx/TC4xx)**, **Texas Instruments Hercules™ (TMS570)**, and **Arm Cortex-R52/R53**—standardize on **Dual-Core Lockstep (DCLS)**:
+Leading semiconductor manufacturers developing ASIL-D solutions (such as **Infineon AURIX™ (TriCore TC3xx/TC4xx)**, **Texas Instruments Hercules™ (TMS570)**, and **Arm Cortex-R52/R53**, standardize on **Dual-Core Lockstep (DCLS)**:
 1. **Redundant Hardware**: Instantiate two identical cores: a **Master Core** and a **Shadow Core**.
 2. **Temporal Diversity**: Run the shadow core 2 clock cycles behind the master core to eliminate Common Cause Failures (CCF).
 3. **Hardware Comparator**: Bit-for-bit parallel comparison of all outgoing address, data, and control lines.
