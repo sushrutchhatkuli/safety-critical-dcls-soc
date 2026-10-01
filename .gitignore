@@ -25,6 +25,11 @@ xelab.log
 build/
 bin/
 
+# Obsidian state
+.obsidian/workspace.json
+.obsidian/workspace-mobile.json
+.obsidian/cache/
+
 # OS specific
 Thumbs.db
 .DS_Store
