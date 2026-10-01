@@ -1,0 +1,30 @@
+# Vivado / EDA Artifacts
+*.log
+*.jou
+*.pb
+*.wdb
+*.vcd
+.Xil/
+xsim.dir/
+xsim*.backup.*
+xvlog.log
+xelab.log
+
+# Synthesis & Implementation outputs
+*.dcp
+*.rpt
+*.bit
+*.bin
+
+# C/RISC-V Firmware builds
+*.o
+*.elf
+*.bin
+*.hex
+*.dump
+build/
+bin/
+
+# OS specific
+Thumbs.db
+.DS_Store

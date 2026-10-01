@@ -1,0 +1,227 @@
+{
+  "main": {
+    "id": "38dc63c6d6464b65",
+    "type": "split",
+    "children": [
+      {
+        "id": "45cdbb889d1f49a3",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "377ec9a9cef9c15a",
+            "type": "leaf",
+            "state": {
+              "type": "empty",
+              "state": {},
+              "icon": "lucide-file",
+              "title": "New tab"
+            }
+          }
+        ]
+      },
+      {
+        "id": "fc62f3e55eef37a1",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "61521d2bb9ebbcb0",
+            "type": "leaf",
+            "state": {
+              "type": "graph",
+              "state": {},
+              "icon": "lucide-git-fork",
+              "title": "Graph view"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "661ce309592ed83f",
+    "type": "split",
+    "children": [
+      {
+        "id": "c3c5259d07f46322",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "b4a8b3ca3e4f979e",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "7247cabc31ef7e45",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "5a046742fb2b4506",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "16ad86e4a6411385",
+    "type": "split",
+    "children": [
+      {
+        "id": "dfcc9c3f8a2e31d4",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "35a82552110b48a0",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks"
+            }
+          },
+          {
+            "id": "3f60cd436c5bb0be",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links"
+            }
+          },
+          {
+            "id": "8aaa00660735315e",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "1806a7611dc85988",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "5351e4ca0476b9fb",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "377ec9a9cef9c15a",
+  "lastOpenFiles": [
+    "09 - Step-by-Step Implementation Roadmap/01_Comprehensive_Phase_by_Phase_Execution_Plan.md",
+    "08 - Physical Synthesis & Timing Closure/01_FPGA_Synthesis_and_Timing_Closure_Artix7.md",
+    "07 - Fault Injection & Verification Suite/01_Fault_Injection_and_ASIL_D_Verification.md",
+    "06 - Bare-Metal Safety Firmware/01_Safety_Firmware_and_ABS_Control_Loop.md",
+    "05 - System Interconnect & IP Integration/01_Memory_Map_and_Interconnect_Architecture.md",
+    "04 - Fault Control Unit & UART Telemetry/01_FCU_and_Blackbox_Telemetry_Logging.md",
+    "03 - DCLS Comparator & Bus Firewall/01_Combinational_Comparator_and_Zero_Cycle_Firewall.md",
+    "02 - Microarchitecture & Temporal Diversity/01_DCLS_Core_Wrapper_Architecture.md",
+    "01 - ISO 26262 & Functional Safety Theory/02_Common_Cause_Failures_and_Temporal_Diversity.md",
+    "01 - ISO 26262 & Functional Safety Theory/01_ISO_26262_ASIL_D_Deep_Dive.md",
+    "00 - Foundations & Orientation/01_Executive_Summary_and_Problem_Formulation.md",
+    "00 - Foundations & Orientation/00_MOC_Master_Dashboard.md",
+    "Welcome.md",
+    "assets/system_architecture.png",
+    "09 - Step-by-Step Implementation Roadmap",
+    "08 - Physical Synthesis & Timing Closure",
+    "07 - Fault Injection & Verification Suite",
+    "06 - Bare-Metal Safety Firmware",
+    "05 - System Interconnect & IP Integration",
+    "04 - Fault Control Unit & UART Telemetry",
+    "03 - DCLS Comparator & Bus Firewall",
+    "02 - Microarchitecture & Temporal Diversity",
+    "01 - ISO 26262 & Functional Safety Theory",
+    "00 - Foundations & Orientation"
+  ]
+}
