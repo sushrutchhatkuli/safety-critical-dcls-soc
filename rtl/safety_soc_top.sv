@@ -17,9 +17,9 @@
 `timescale 1ns / 1ps
 
 module safety_soc_top #(
-    parameter int IMEM_WORDS   = 4096,  // 16 KB Instruction Memory
-    parameter int DMEM_WORDS   = 16384, // 64 KB Data Memory
-    parameter int UART_DIVISOR = 53     // 100 MHz clock -> 115200 Baud
+    parameter int IMEM_WORDS   = 1024, // 4 KB Instruction Memory (1024 x 32-bit words)
+    parameter int DMEM_WORDS   = 1024, // 4 KB Data Memory (1024 x 32-bit words)
+    parameter int UART_DIVISOR = 53    // 100 MHz clock -> 115200 Baud
 )(
     input  logic        clk,
     input  logic        rst_n,
@@ -38,14 +38,14 @@ module safety_soc_top #(
 );
 
     // =========================================================================
-    // 1. ON-CHIP INSTRUCTION MEMORY (16 KB)
+    // 1. ON-CHIP INSTRUCTION MEMORY (4 KB)
     // =========================================================================
-    logic [31:0] imem_storage [0:IMEM_WORDS-1];
+    (* ram_style = "distributed" *) logic [31:0] imem_storage [0:IMEM_WORDS-1];
     logic [31:0] raw_imem_addr;
     logic [31:0] raw_imem_rdata;
 
     // Asynchronous read for single-cycle RV32I instruction fetch
-    assign raw_imem_rdata = imem_storage[raw_imem_addr[13:2]];
+    assign raw_imem_rdata = imem_storage[raw_imem_addr[11:2]];
 
     // =========================================================================
     // 2. DUAL-CORE LOCKSTEP SUBSYSTEM (Delta t = 2 clock cycles)

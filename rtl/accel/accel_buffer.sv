@@ -1,10 +1,11 @@
 // =============================================================================
 // File: accel_buffer.sv
 // Project: Heterogeneous RISC-V SoC with AXI4-Lite & Accelerator
-// Description: True Dual-Port Synchronous Scratchpad SRAM for Matrix Storage.
+// Description: Scratchpad SRAM for Matrix Storage.
 //              Port A: 32-bit word read/write with byte strobes for AXI interface.
 //              Port B: 16-bit halfword read/write for Accelerator FSM datapath.
-//              All memory locations initialize to zero.
+//              Single-write-port multiplexed architecture for distributed RAM
+//              FPGA synthesis compliance.
 // =============================================================================
 
 `timescale 1ns / 1ps
@@ -33,54 +34,56 @@ module accel_buffer #(
     output logic [15:0] b_rdata
 );
 
-    // 32-bit wide internal storage array
-    logic [31:0] mem [0:DEPTH_WORDS-1];
+    // 4 independent byte banks for collision-free byte strobing
+    (* ram_style = "distributed" *) logic [7:0] mem0 [0:DEPTH_WORDS-1];
+    (* ram_style = "distributed" *) logic [7:0] mem1 [0:DEPTH_WORDS-1];
+    (* ram_style = "distributed" *) logic [7:0] mem2 [0:DEPTH_WORDS-1];
+    (* ram_style = "distributed" *) logic [7:0] mem3 [0:DEPTH_WORDS-1];
 
-    // Initialize all memory to 0 to prevent uninitialized 'x' propagation
+    // Initialize all memory to 0
     integer init_i;
     initial begin
         for (init_i = 0; init_i < DEPTH_WORDS; init_i = init_i + 1) begin
-            mem[init_i] = 32'd0;
+            mem0[init_i] = 8'd0;
+            mem1[init_i] = 8'd0;
+            mem2[init_i] = 8'd0;
+            mem3[init_i] = 8'd0;
         end
     end
 
-    // -------------------------------------------------------------------------
-    // Port A: Synchronous Write & Read
-    // -------------------------------------------------------------------------
-    always_ff @(posedge clk) begin
-        if (a_we) begin
-            if (a_wstrb[0]) mem[a_addr][7:0]   <= a_wdata[7:0];
-            if (a_wstrb[1]) mem[a_addr][15:8]  <= a_wdata[15:8];
-            if (a_wstrb[2]) mem[a_addr][23:16] <= a_wdata[23:16];
-            if (a_wstrb[3]) mem[a_addr][31:24] <= a_wdata[31:24];
-        end
-    end
-
-    // Combinational read for Port A allows zero-latency read access
-    assign a_rdata = mem[a_addr];
-
-    // -------------------------------------------------------------------------
-    // Port B: Synchronous 16-Bit Halfword Write & Combinational Read
-    // b_addr[0] == 0: lower halfword [15:0]
-    // b_addr[0] == 1: upper halfword [31:16]
-    // -------------------------------------------------------------------------
+    // Port B address mapping
     logic [8:0] b_word_addr;
     logic       b_half_sel;
 
     assign b_word_addr = b_addr[9:1];
     assign b_half_sel  = b_addr[0];
 
+    // -------------------------------------------------------------------------
+    // Synchronous Write Process (Single-Port Arbiter for Synthesis Compliance)
+    // Priority: Port A (AXI external host write) > Port B (Internal FSM write)
+    // -------------------------------------------------------------------------
     always_ff @(posedge clk) begin
-        if (b_we) begin
+        if (a_we) begin
+            if (a_wstrb[0]) mem0[a_addr] <= a_wdata[7:0];
+            if (a_wstrb[1]) mem1[a_addr] <= a_wdata[15:8];
+            if (a_wstrb[2]) mem2[a_addr] <= a_wdata[23:16];
+            if (a_wstrb[3]) mem3[a_addr] <= a_wdata[31:24];
+        end else if (b_we) begin
             if (b_half_sel) begin
-                mem[b_word_addr][31:16] <= b_wdata;
+                mem2[b_word_addr] <= b_wdata[7:0];
+                mem3[b_word_addr] <= b_wdata[15:8];
             end else begin
-                mem[b_word_addr][15:0]  <= b_wdata;
+                mem0[b_word_addr] <= b_wdata[7:0];
+                mem1[b_word_addr] <= b_wdata[15:8];
             end
         end
     end
 
-    // Combinational read for Port B
-    assign b_rdata = b_half_sel ? mem[b_word_addr][31:16] : mem[b_word_addr][15:0];
+    // -------------------------------------------------------------------------
+    // Asynchronous Read Ports
+    // -------------------------------------------------------------------------
+    assign a_rdata = {mem3[a_addr], mem2[a_addr], mem1[a_addr], mem0[a_addr]};
+    assign b_rdata = b_half_sel ? {mem3[b_word_addr], mem2[b_word_addr]} 
+                                : {mem1[b_word_addr], mem0[b_word_addr]};
 
 endmodule
