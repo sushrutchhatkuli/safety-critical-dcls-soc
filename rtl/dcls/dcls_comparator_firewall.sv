@@ -125,6 +125,13 @@ module dcls_comparator_firewall (
                 // Latch sticky fault state on first occurrence
                 fault_latched <= 1'b1;
 
+                $display("[%0t ns] DCLS FIREWALL TRIPPED: imem_err=%b, dmem_addr_err=%b, dmem_wdata_err=%b, dmem_ctrl_err=%b",
+                         $time, imem_mismatch, dmem_addr_mismatch, dmem_wdata_mismatch, dmem_ctrl_mismatch);
+                $display("   Master delayed PC: 0x%08h, Shadow PC: 0x%08h", m_imem_addr_delayed, s_imem_addr);
+                $display("   Master delayed DMEM addr: 0x%08h, Shadow DMEM addr: 0x%08h", m_dmem_addr_delayed, s_dmem_addr);
+                $display("   Master delayed WE: %b, Shadow WE: %b, Master delayed RE: %b, Shadow RE: %b",
+                         m_dmem_we_delayed, s_dmem_we, m_dmem_re_delayed, s_dmem_re);
+
                 // Freeze fault classification code
                 fault_code <= {
                     dmem_ctrl_mismatch,

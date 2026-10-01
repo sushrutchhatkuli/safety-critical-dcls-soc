@@ -52,7 +52,12 @@ module uart_axi_top #(
     input  logic                      uart_rxd,
 
     // Interrupt Pin
-    output logic                      uart_irq
+    output logic                      uart_irq,
+
+    // Direct FCU Blackbox Telemetry Interface
+    input  logic                      fcu_tx_push,
+    input  logic [7:0]                fcu_tx_byte,
+    output logic                      uart_tx_full_out
 );
 
     // Internal Interconnect Wires
@@ -204,15 +209,19 @@ module uart_axi_top #(
         .uart_irq             (uart_irq)
     );
 
-    // 2. Transmit Circular FIFO
+    // 2. Transmit Circular FIFO (Multiplexed between AXI and FCU direct telemetry)
+    wire       eff_tx_fifo_push  = tx_fifo_push | fcu_tx_push;
+    wire [7:0] eff_tx_fifo_wdata = fcu_tx_push ? fcu_tx_byte : tx_fifo_wdata;
+    assign uart_tx_full_out      = tx_fifo_full;
+
     fifo_circular #(
         .DATA_WIDTH(8),
         .DEPTH(FIFO_DEPTH)
     ) tx_fifo_inst (
         .clk   (s_axi_aclk),
         .rst_n (s_axi_aresetn),
-        .push  (tx_fifo_push),
-        .wdata (tx_fifo_wdata),
+        .push  (eff_tx_fifo_push),
+        .wdata (eff_tx_fifo_wdata),
         .full  (tx_fifo_full),
         .pop   (tx_fifo_pop),
         .rdata (tx_fifo_rdata),

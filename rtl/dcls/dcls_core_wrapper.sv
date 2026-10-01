@@ -20,6 +20,7 @@ module dcls_core_wrapper (
     input  logic [31:0] raw_imem_rdata,
 
     // Real-Time Master Data Memory Bus (to external Interconnect / Bridge)
+    output logic [31:0] raw_dmem_addr,
     input  logic [31:0] raw_dmem_rdata,
 
     // Synchronized Bus Outputs (Delayed Master vs Real-Time Shadow)
@@ -53,25 +54,27 @@ module dcls_core_wrapper (
     // 50ns: Master released (d1<=1, d2<=0, d3<=0)
     // 60ns: Cycle 1 (d2<=1, d3<=0)
     // 70ns: Cycle 2 - Shadow released (d3<=1) -> Delta t = 2 clock cycles
-    logic rst_n_d1, rst_n_d2, rst_n_d3;
+    logic rst_n_d1, rst_n_d2, rst_n_d3, rst_n_d4;
 
     always_ff @(posedge clk or negedge rst_n) begin
         if (!rst_n) begin
             rst_n_d1 <= 1'b0;
             rst_n_d2 <= 1'b0;
             rst_n_d3 <= 1'b0;
+            rst_n_d4 <= 1'b0;
         end else begin
             rst_n_d1 <= 1'b1;
             rst_n_d2 <= rst_n_d1;
             rst_n_d3 <= rst_n_d2;
+            rst_n_d4 <= rst_n_d3;
         end
     end
 
     wire master_rst_n = rst_n;
     wire shadow_rst_n = rst_n_d3;
 
-    // Lockstep is active once shadow core comes out of reset
-    assign dcls_active = rst_n_d3;
+    // Lockstep is active once shadow core executes its first instruction in lockstep
+    assign dcls_active = rst_n_d4;
 
     // =========================================================================
     // 2. INPUT DELAY PIPELINE (To Shadow Core)
@@ -118,8 +121,9 @@ module dcls_core_wrapper (
         .dmem_rdata (raw_dmem_rdata)
     );
 
-    // Master core directly drives external instruction memory fetch
+    // Master core directly drives external instruction and data memory fetch
     assign raw_imem_addr = m_imem_addr_raw;
+    assign raw_dmem_addr = m_dmem_addr_raw;
 
     // =========================================================================
     // 4. REDUNDANT (SHADOW) CORE INSTANTIATION (Channel 1: Delayed t - 2)

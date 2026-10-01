@@ -20,6 +20,7 @@ module tb_dcls_wrapper;
     logic [31:0] raw_imem_rdata;
 
     // Data Memory Bus
+    logic [31:0] raw_dmem_addr;
     logic [31:0] raw_dmem_rdata;
 
     // Synchronized Outputs
@@ -41,6 +42,7 @@ module tb_dcls_wrapper;
         .rst_n               (rst_n),
         .raw_imem_addr       (raw_imem_addr),
         .raw_imem_rdata      (raw_imem_rdata),
+        .raw_dmem_addr       (raw_dmem_addr),
         .raw_dmem_rdata      (raw_dmem_rdata),
         .m_imem_addr_delayed (m_imem_addr_delayed),
         .s_imem_addr         (s_imem_addr),
