@@ -29,32 +29,33 @@ status: "Active / Production"
 
 ```mermaid
 flowchart TD
-    CLK["System Clock & Reset\n(100 MHz s_axi_aclk)"] --> DCLS["Dual-Core Lockstep (DCLS) Safety Subsystem"]
-
-    subgraph DCLS["Dual-Core Lockstep (DCLS) Safety Subsystem"]
+    subgraph DCLS["Dual-Core Lockstep Safety Subsystem"]
         direction TB
+        CLK["System Clock and Reset (100 MHz)"]
         DELAY_IN["2-Cycle Input Delay Pipeline\n(Mitigates Common Cause Failures)"]
         CORE_M["Primary RV32I Core\n(Master Channel)"]
         CORE_S["Redundant RV32I Core\n(Shadow Channel)"]
         DELAY_OUT["2-Cycle Master Output Delay\n(Time-Aligns with Shadow)"]
         COMP["DCLS Combinational Comparator\n(Bit-for-Bit Bus Comparison)"]
-        FIREWALL["Zero-Cycle AXI Bus Firewall\n(Instant Write Clamp < 1ns)"]
+        FIREWALL["Zero-Cycle AXI Bus Firewall\n(Instant Write Clamp under 1ns)"]
         FCU["Fault Control Unit (FCU)\n(Fail-Silent Safe State Logic)"]
 
+        CLK --> CORE_M
+        CLK --> DELAY_IN
         DELAY_IN --> CORE_S
         CORE_M --> DELAY_OUT
-        CORE_S -->|Shadow Bus Out| COMP
-        DELAY_OUT -->|Master Bus Out (Delayed)| COMP
-        COMP -->|Match Confirmed| FIREWALL
-        COMP -->|Mismatch Fault| FCU
-        FCU -->|Emergency Clamp| FIREWALL
-        FCU -->|Safe-State Reset| CORE_M
-        FCU -->|Safe-State Reset| CORE_S
+        CORE_S -->|"Shadow Bus Out"| COMP
+        DELAY_OUT -->|"Master Bus Out - Delayed"| COMP
+        COMP -->|"Match Confirmed"| FIREWALL
+        COMP -->|"Mismatch Fault"| FCU
+        FCU -->|"Emergency Clamp"| FIREWALL
+        FCU -->|"Safe-State Reset"| CORE_M
+        FCU -->|"Safe-State Reset"| CORE_S
     end
 
     subgraph INTERCONNECT["AMBA AXI Interconnect Subsystem"]
-        XBAR["AXI4 Crossbar & Address Decoder"]
-        RAM_I["Instruction & Program RAM\n(16 KB @ 0x0000_0000)"]
+        XBAR["AXI4 Crossbar and Address Decoder"]
+        RAM_I["Instruction and Program RAM\n(16 KB @ 0x0000_0000)"]
         RAM_D["Data RAM\n(16 KB @ 0x0001_0000)"]
         ACCEL["Custom AXI Hardware Accelerator\n(Fixed-Point Safety Math @ 0x2000_0000)"]
         
@@ -69,9 +70,9 @@ flowchart TD
         UART --> PIN_TX
     end
 
-    FIREWALL -->|Protected AXI Bus| XBAR
-    FCU -->|Autonomous Fault Strobe & Frame| UART
-    FCU -->|External Physical Pin| PIN_SAFE["External Pin: safe_state_out\n(Actuator Disconnect Interlock)"]
+    FIREWALL -->|"Protected AXI Bus"| XBAR
+    FCU -->|"Autonomous Fault Strobe"| UART
+    FCU -->|"External Physical Pin"| PIN_SAFE["External Pin: safe_state_out\n(Actuator Disconnect Interlock)"]
 ```
 
 ---

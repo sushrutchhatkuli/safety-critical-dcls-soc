@@ -63,9 +63,9 @@ $$\Delta t = 2\text{ clock cycles}$$
 1. **Shadow Input Shift Register**:
    $$\text{Inputs}_{\text{shadow}}(t) = \text{Inputs}_{\text{master}}(t - 2)$$
 2. **Master Output Shift Register**:
-   $$\text{Outputs}_{\text{master\_delayed}}(t) = \text{Outputs}_{\text{master}}(t - 2)$$
+   $$\text{Outputs}_{\text{delayed}}(t) = \text{Outputs}_{\text{master}}(t - 2)$$
 3. **Comparator Evaluation**:
-   $$\text{Fault}(t) = \left(\text{Outputs}_{\text{master\_delayed}}(t) \ne \text{Outputs}_{\text{shadow}}(t)\right)$$
+   $$\text{Fault}(t) = \left(\text{Outputs}_{\text{delayed}}(t) \ne \text{Outputs}_{\text{shadow}}(t)\right)$$
 
 ---
 
@@ -81,7 +81,7 @@ Let a physical event (EMP spike or voltage droop) impact the die at clock cycle 
      $$S_S(t_0) = S_{K-2} \oplus \delta_S$$
 
 2. Core Master's corrupted result from Instruction $K$ exits its pipeline and enters the 2-cycle master output delay shift register. It will reach the comparator at time $t_0 + 2$:
-   $$\text{Outputs}_{\text{master\_delayed}}(t_0 + 2) = f(S_K \oplus \delta_M)$$
+   $$\text{Outputs}_{\text{delayed}}(t_0 + 2) = f(S_K \oplus \delta_M)$$
 
 3. What is Core Shadow doing at time $t_0 + 2$?
    - Core Shadow is now executing Instruction $K$.
