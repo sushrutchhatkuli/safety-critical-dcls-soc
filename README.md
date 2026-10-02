@@ -244,6 +244,12 @@ assert_isolation: assert property (p_zero_corrupted_writes);
 
 $$\text{SPFM} = \frac{N_{\text{detected}}}{N_{\text{total}}} = \frac{500}{500} = \mathbf{100.0\%}$$
 
+### Simulation Waveform Verification
+
+The following timing trace captured from Vivado XSim illustrates the dual-core lockstep divergence, sub-nanosecond bus firewall clamping, and autonomous fault telemetry packet streaming:
+
+![ISO 26262 Fault Injection and Bus Clamping Waveform](docs/assets/waveform_fault_injection.png)
+
 ---
 
 ## Physical Implementation & FPGA Timing
