@@ -20,5 +20,5 @@ if not exist "%WDB_FILE%" (
 )
 
 echo Opening "%WDB_FILE%" with Vivado GUI...
-start "" "%VIVADO_BIN%\vivado.bat" "%WDB_FILE%"
+call "%VIVADO_BIN%\vivado.bat" %WDB_FILE%
 exit /b 0
