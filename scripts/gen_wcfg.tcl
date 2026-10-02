@@ -1,0 +1,45 @@
+open_wave_database tb_fault_inj_snap.wdb
+create_wave_config
+add_wave_divider "TOP-LEVEL SAFETY & CLOCK"
+add_wave /tb_fault_injection_campaign/clk
+add_wave /tb_fault_injection_campaign/rst_n
+add_wave /tb_fault_injection_campaign/safe_state_out
+add_wave /tb_fault_injection_campaign/fault_indicator
+add_wave /tb_fault_injection_campaign/uart_txd
+
+add_wave_divider "DCLS COMPARATOR & BUS FIREWALL"
+add_wave /tb_fault_injection_campaign/dut/fault_detected_comb
+add_wave /tb_fault_injection_campaign/dut/fault_latched
+add_wave /tb_fault_injection_campaign/dut/fault_code
+add_wave /tb_fault_injection_campaign/dut/fault_pc
+add_wave /tb_fault_injection_campaign/dut/protected_dmem_we
+add_wave /tb_fault_injection_campaign/dut/protected_dmem_addr
+add_wave /tb_fault_injection_campaign/dut/protected_dmem_wdata
+
+add_wave_divider "PRIMARY (DELAYED) vs SHADOW CORE BUS"
+add_wave /tb_fault_injection_campaign/dut/m_imem_addr_delayed
+add_wave /tb_fault_injection_campaign/dut/s_imem_addr
+add_wave /tb_fault_injection_campaign/dut/m_dmem_addr_delayed
+add_wave /tb_fault_injection_campaign/dut/s_dmem_addr
+add_wave /tb_fault_injection_campaign/dut/m_dmem_wdata_delayed
+add_wave /tb_fault_injection_campaign/dut/s_dmem_wdata
+add_wave /tb_fault_injection_campaign/dut/m_dmem_we_delayed
+add_wave /tb_fault_injection_campaign/dut/s_dmem_we
+
+add_wave_divider "FAULT CONTROL UNIT (FCU)"
+add_wave /tb_fault_injection_campaign/dut/fcu_safe_state
+add_wave /tb_fault_injection_campaign/dut/fcu_state
+add_wave /tb_fault_injection_campaign/dut/fcu_tx_push
+add_wave /tb_fault_injection_campaign/dut/fcu_tx_byte
+add_wave /tb_fault_injection_campaign/dut/fcu_busy
+add_wave /tb_fault_injection_campaign/dut/fcu_done
+
+add_wave_divider "METRICS COUNTERS"
+add_wave /tb_fault_injection_campaign/total_faults_injected
+add_wave /tb_fault_injection_campaign/total_faults_detected
+add_wave /tb_fault_injection_campaign/total_faults_contained
+
+save_wave_config tb_fault_inj.wcfg
+close_wave_config
+close_wave_database
+exit
