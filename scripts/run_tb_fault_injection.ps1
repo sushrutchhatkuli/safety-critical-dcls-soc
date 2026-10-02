@@ -60,9 +60,9 @@ if ($LASTEXITCODE -ne 0) {
     exit $LASTEXITCODE
 }
 
-# 4. Simulate with xsim
-Write-Host "Step 4: Running simulation with xsim..." -ForegroundColor Yellow
-& $XSIM tb_fault_inj_snap -R
+# 4. Simulate with xsim and log all waveforms
+Write-Host "Step 4: Running simulation with xsim and recording waveforms..." -ForegroundColor Yellow
+& $XSIM tb_fault_inj_snap -tclbatch scripts/xsim_run_all_with_wave.tcl -wdb tb_fault_inj_snap.wdb
 if ($LASTEXITCODE -ne 0) {
     Write-Host "[ERROR] xsim execution failed!" -ForegroundColor Red
     exit $LASTEXITCODE
@@ -72,5 +72,6 @@ Write-Host "============================================================" -Foreg
 Write-Host " Phase 6 Fault Injection Campaign Succeeded!                " -ForegroundColor Green
 Write-Host "============================================================" -ForegroundColor Green
 
-# Clean up temporary logs to keep workspace clean
-Remove-Item -Recurse -Force xsim.dir, .Xil, *.log, *.pb, *.jou -ErrorAction SilentlyContinue
+# Clean up temporary logs but preserve xsim.dir and .wdb for waveform viewing
+Remove-Item -Recurse -Force .Xil, *.log, *.pb, *.jou -ErrorAction SilentlyContinue
+
