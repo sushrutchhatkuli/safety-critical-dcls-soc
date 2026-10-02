@@ -1,0 +1,155 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<wave_config>
+   <wave_state>
+   </wave_state>
+   <db_ref_list>
+      <db_ref path="tb_fault_inj_snap.wdb" id="1">
+         <top_modules>
+            <top_module name="\$unit_uart_pkg_sv_2135050253 " />
+            <top_module name="tb_fault_injection_campaign" />
+            <top_module name="uart_pkg" />
+         </top_modules>
+      </db_ref>
+   </db_ref_list>
+   <zoom_setting>
+   </zoom_setting>
+   <column_width_setting>
+   </column_width_setting>
+   <WVObjectSize size="34" />
+   <wvobject type="divider" fp_name="divider1">
+      <obj_property name="label">TOP-LEVEL SAFETY &amp; CLOCK</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/clk" type="logic">
+      <obj_property name="ElementShortName">clk</obj_property>
+      <obj_property name="ObjectShortName">clk</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/rst_n" type="logic">
+      <obj_property name="ElementShortName">rst_n</obj_property>
+      <obj_property name="ObjectShortName">rst_n</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/safe_state_out" type="logic">
+      <obj_property name="ElementShortName">safe_state_out</obj_property>
+      <obj_property name="ObjectShortName">safe_state_out</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/fault_indicator" type="logic">
+      <obj_property name="ElementShortName">fault_indicator</obj_property>
+      <obj_property name="ObjectShortName">fault_indicator</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/uart_txd" type="logic">
+      <obj_property name="ElementShortName">uart_txd</obj_property>
+      <obj_property name="ObjectShortName">uart_txd</obj_property>
+   </wvobject>
+   <wvobject type="divider" fp_name="divider7">
+      <obj_property name="label">DCLS COMPARATOR &amp; BUS FIREWALL</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/dut/fault_detected_comb" type="logic">
+      <obj_property name="ElementShortName">fault_detected_comb</obj_property>
+      <obj_property name="ObjectShortName">fault_detected_comb</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/dut/fault_latched" type="logic">
+      <obj_property name="ElementShortName">fault_latched</obj_property>
+      <obj_property name="ObjectShortName">fault_latched</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/dut/fault_code" type="array">
+      <obj_property name="ElementShortName">fault_code[4:0]</obj_property>
+      <obj_property name="ObjectShortName">fault_code[4:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/dut/fault_pc" type="array">
+      <obj_property name="ElementShortName">fault_pc[31:0]</obj_property>
+      <obj_property name="ObjectShortName">fault_pc[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/dut/protected_dmem_we" type="logic">
+      <obj_property name="ElementShortName">protected_dmem_we</obj_property>
+      <obj_property name="ObjectShortName">protected_dmem_we</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/dut/protected_dmem_addr" type="array">
+      <obj_property name="ElementShortName">protected_dmem_addr[31:0]</obj_property>
+      <obj_property name="ObjectShortName">protected_dmem_addr[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/dut/protected_dmem_wdata" type="array">
+      <obj_property name="ElementShortName">protected_dmem_wdata[31:0]</obj_property>
+      <obj_property name="ObjectShortName">protected_dmem_wdata[31:0]</obj_property>
+   </wvobject>
+   <wvobject type="divider" fp_name="divider15">
+      <obj_property name="label">PRIMARY (DELAYED) vs SHADOW CORE BUS</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/dut/m_imem_addr_delayed" type="array">
+      <obj_property name="ElementShortName">m_imem_addr_delayed[31:0]</obj_property>
+      <obj_property name="ObjectShortName">m_imem_addr_delayed[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/dut/s_imem_addr" type="array">
+      <obj_property name="ElementShortName">s_imem_addr[31:0]</obj_property>
+      <obj_property name="ObjectShortName">s_imem_addr[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/dut/m_dmem_addr_delayed" type="array">
+      <obj_property name="ElementShortName">m_dmem_addr_delayed[31:0]</obj_property>
+      <obj_property name="ObjectShortName">m_dmem_addr_delayed[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/dut/s_dmem_addr" type="array">
+      <obj_property name="ElementShortName">s_dmem_addr[31:0]</obj_property>
+      <obj_property name="ObjectShortName">s_dmem_addr[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/dut/m_dmem_wdata_delayed" type="array">
+      <obj_property name="ElementShortName">m_dmem_wdata_delayed[31:0]</obj_property>
+      <obj_property name="ObjectShortName">m_dmem_wdata_delayed[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/dut/s_dmem_wdata" type="array">
+      <obj_property name="ElementShortName">s_dmem_wdata[31:0]</obj_property>
+      <obj_property name="ObjectShortName">s_dmem_wdata[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/dut/m_dmem_we_delayed" type="logic">
+      <obj_property name="ElementShortName">m_dmem_we_delayed</obj_property>
+      <obj_property name="ObjectShortName">m_dmem_we_delayed</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/dut/s_dmem_we" type="logic">
+      <obj_property name="ElementShortName">s_dmem_we</obj_property>
+      <obj_property name="ObjectShortName">s_dmem_we</obj_property>
+   </wvobject>
+   <wvobject type="divider" fp_name="divider24">
+      <obj_property name="label">FAULT CONTROL UNIT (FCU)</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/dut/fcu_safe_state" type="logic">
+      <obj_property name="ElementShortName">fcu_safe_state</obj_property>
+      <obj_property name="ObjectShortName">fcu_safe_state</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/dut/fcu_state" type="array">
+      <obj_property name="ElementShortName">fcu_state[3:0]</obj_property>
+      <obj_property name="ObjectShortName">fcu_state[3:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/dut/fcu_tx_push" type="logic">
+      <obj_property name="ElementShortName">fcu_tx_push</obj_property>
+      <obj_property name="ObjectShortName">fcu_tx_push</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/dut/fcu_tx_byte" type="array">
+      <obj_property name="ElementShortName">fcu_tx_byte[7:0]</obj_property>
+      <obj_property name="ObjectShortName">fcu_tx_byte[7:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/dut/fcu_busy" type="logic">
+      <obj_property name="ElementShortName">fcu_busy</obj_property>
+      <obj_property name="ObjectShortName">fcu_busy</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/dut/fcu_done" type="logic">
+      <obj_property name="ElementShortName">fcu_done</obj_property>
+      <obj_property name="ObjectShortName">fcu_done</obj_property>
+   </wvobject>
+   <wvobject type="divider" fp_name="divider31">
+      <obj_property name="label">METRICS COUNTERS</obj_property>
+      <obj_property name="DisplayName">label</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/total_faults_injected" type="array">
+      <obj_property name="ElementShortName">total_faults_injected[31:0]</obj_property>
+      <obj_property name="ObjectShortName">total_faults_injected[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/total_faults_detected" type="array">
+      <obj_property name="ElementShortName">total_faults_detected[31:0]</obj_property>
+      <obj_property name="ObjectShortName">total_faults_detected[31:0]</obj_property>
+   </wvobject>
+   <wvobject fp_name="/tb_fault_injection_campaign/total_faults_contained" type="array">
+      <obj_property name="ElementShortName">total_faults_contained[31:0]</obj_property>
+      <obj_property name="ObjectShortName">total_faults_contained[31:0]</obj_property>
+   </wvobject>
+</wave_config>

@@ -5,7 +5,8 @@
 # ==============================================================================
 
 param(
-    [string]$WdbFile = "tb_fault_inj_snap.wdb"
+    [string]$WdbFile = "tb_fault_inj_snap.wdb",
+    [string]$WcfgFile = "tb_fault_inj.wcfg"
 )
 
 $VIVADO_BAT = "C:\Xilinx\2025.1\Vivado\bin\vivado.bat"
@@ -23,4 +24,8 @@ if (-not (Test-Path $WdbFile)) {
 }
 
 Write-Host "Opening '$WdbFile' with Vivado GUI..." -ForegroundColor Green
-Start-Process -FilePath $VIVADO_BAT -ArgumentList $WdbFile
+if (Test-Path $WcfgFile) {
+    Start-Process -FilePath $VIVADO_BAT -ArgumentList "$WdbFile -view $WcfgFile"
+} else {
+    Start-Process -FilePath $VIVADO_BAT -ArgumentList $WdbFile
+}
