@@ -244,11 +244,32 @@ assert_isolation: assert property (p_zero_corrupted_writes);
 
 $$\text{SPFM} = \frac{N_{\text{detected}}}{N_{\text{total}}} = \frac{500}{500} = \mathbf{100.0\%}$$
 
-### Simulation Waveform Verification
+### Simulation Waveform Verification & Results Analysis
 
-The following timing trace captured from Vivado XSim illustrates the dual-core lockstep divergence, sub-nanosecond bus firewall clamping, and autonomous fault telemetry packet streaming:
+The physical fault injection campaign was simulated in AMD Vivado XSim across all 7 hardware fault scenarios. The waveforms below capture the hardware behavior across three functional layers:
 
-![ISO 26262 Fault Injection and Bus Clamping Waveform](docs/assets/waveform_fault_injection.png)
+#### 1. Top-Level Safety Signals & Zero-Cycle Bus Firewall
+![Top-Level Safety and Bus Firewall Waveform](docs/assets/waveform_top_firewall.png)
+
+- **System Interlocks (`safe_state_out`, `fault_indicator`)**: Transition from `0` to `1` on clock edges following any detected divergence, latching the SoC permanently into a fail-safe state to decouple external automotive actuators.
+- **Sub-Nanosecond Bus Firewall Clamping (`protected_dmem_we`)**: Notice that while the internal CPU pipelines pulse memory write requests, the moment `fault_detected_comb` asserts high, `protected_dmem_we` is clamped to `0` within $< 1.0\text{ ns}$ by the combinational comparison trees. Corrupt data never reaches SRAM.
+- **Syndrome Latching (`fault_code`, `fault_pc`)**: Upon fault detection, the exact offending Program Counter (`0x0000_0500` in Run 2) and fault classification vector are latched into diagnostic registers for non-volatile blackbox telemetry logging.
+
+#### 2. Dual-Core Lockstep Alignment & SEU Containment
+![Dual-Core Lockstep and Temporal Diversity Waveform](docs/assets/waveform_core_lockstep.png)
+
+- **Temporal Diversity Synchronization**: Primary core outputs pass through a 2-cycle balancing delay line (`m_imem_addr_delayed`, `m_dmem_addr_delayed`) to align synchronously with the delayed shadow core (`s_imem_addr`, `s_dmem_addr`) at cycle $T_2$.
+- **Containment of Uninitialized States (Red 'X' in Run 2)**: At $585\text{ ns}$, a Single Event Upset (SEU) forces the primary Program Counter to unmapped memory (`0x0000_0500`), resulting in the CPU fetching uninitialized words (`32'hxxxxxxxx`) depicted by red hatched bars. The bus firewall isolates the CPU in zero cycles, ensuring that uninitialized states never corrupt memory.
+- **FCU Activation**: The Fault Control Unit state machine (`fcu_state`) transitions from idle (`0x0`) to active logging (`0xA`), holding `fcu_safe_state = 1`.
+
+#### 3. Autonomous FCU Telemetry & Safety Metrics Counters
+![FCU Telemetry and Metrics Counters Waveform](docs/assets/waveform_fcu_metrics.png)
+
+- **Crash Packet Push Handshake (`fcu_tx_push`, `fcu_tx_byte`, `fcu_busy`, `fcu_done`)**: The FCU serializes an 8-byte diagnostic frame (`0xAA`, `0x46`, PC[31:0], Code, Checksum) directly into the UART transmit FIFO buffer without CPU intervention.
+- **Hardware Safety Metric Accumulators**:
+  - `total_faults_injected`: Monotonically increments from 0 to 7 across all test runs.
+  - `total_faults_detected`: Reaches 7 out of 7, confirming 100.0% fault detection coverage.
+  - `total_faults_contained`: Reaches 7 out of 7, verifying 100.0% Single-Point Fault Metric (SPFM) with zero silent data corruption escapes.
 
 ---
 
