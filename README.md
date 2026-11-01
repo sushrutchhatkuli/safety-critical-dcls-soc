@@ -1,9 +1,9 @@
 # Dual-Core Lockstep (DCLS) RISC-V Safety SoC
-### ISO 26262 ASIL-D Compliant Architecture with 2-Cycle Temporal Diversity, Zero-Cycle Bus Firewall, and Autonomous Telemetry
+### ISO 26262 ASIL-D-Inspired Architecture with 2-Cycle Temporal Diversity, Zero-Cycle Bus Firewall, and Autonomous Telemetry
 
 [![Language](https://img.shields.io/badge/Language-SystemVerilog%20%7C%20C%20%7C%20Assembly-blue.svg)](https://en.wikipedia.org/wiki/SystemVerilog)
 [![Standard](https://img.shields.io/badge/Standard-ISO%2026262%20ASIL--D-red.svg)](https://en.wikipedia.org/wiki/ISO_26262)
-[![SPFM](https://img.shields.io/badge/Single%20Point%20Fault%20Metric-100%25%20(Target%20%3E99%25)-brightgreen.svg)]()
+[![Fault Injection](https://img.shields.io/badge/Fault%20Injection-7%2F7%20Detected%20%26%20Contained-brightgreen.svg)](tb/tb_fault_injection_campaign.sv)
 [![Target FPGA](https://img.shields.io/badge/FPGA-AMD%20Artix--7%20(xc7a35t)-orange.svg)](https://www.xilinx.com)
 [![EDA](https://img.shields.io/badge/EDA-AMD%20Vivado%202025.1-purple.svg)]()
 [![Clock](https://img.shields.io/badge/Fmax-100.0%20MHz%20(Timing%20Closed)-success.svg)]()
@@ -37,11 +37,11 @@ In safety-critical control environments (such as autonomous vehicle braking, ste
 
 These physical events induce Single Event Upsets (SEUs): transient bit-flips in flip-flops, program counters, and arithmetic units. In drive-by-wire applications, an uncontained bit-flip can alter critical control states, such as converting a brake demand into acceleration. Traditional software assertions cannot resolve this condition because the underlying silicon executing the instructions is compromised.
 
-To achieve compliance with the highest functional safety level, ISO 26262 ASIL-D (Automotive Safety Integrity Level D), this project implements a Dual-Core Lockstep (DCLS) System-on-Chip (SoC) around a 32-bit RISC-V (RV32I) processing pipeline. 
+Targeting the safety mechanisms required at the highest functional safety level, ISO 26262 ASIL-D (Automotive Safety Integrity Level D), this project implements a Dual-Core Lockstep (DCLS) System-on-Chip (SoC) around a 32-bit RISC-V (RV32I) processing pipeline. 
 
 The architecture guarantees deterministic, fail-silent protection through hardware:
 - A 2-cycle temporal stagger between redundant cores to mitigate Common Cause Failures (CCF).
-- A combinational bus firewall that gates corrupted write commands in under 1 nanosecond.
+- A combinational bus firewall that gates corrupted write commands combinationally, in the same clock cycle the mismatch appears.
 - An autonomous hardware state machine that freezes diagnostic context and streams a crash frame to an external flight recorder via a circular UART buffer without CPU execution.
 
 ---
@@ -104,7 +104,7 @@ flowchart TD
 | :--- | :--- | :--- |
 | **Dual-Core Redundancy** | Dual synthesizable 5-stage RV32I cores | Eliminates single points of failure at the processing element level. |
 | **Temporal Diversity** | 2-cycle input/output shift registers ($\Delta t = 2$) | Mitigates Common Cause Failures (CCF) by decorrelating spatial disturbances (voltage droops, EMI). |
-| **Zero-Cycle Bus Isolation** | Combinational active-low gating ($< 1.0\text{ ns}$) | Precludes corrupt memory latching within the exact cycle divergence is identified. |
+| **Zero-Cycle Bus Isolation** | Combinational active-low gating (same cycle) | Precludes corrupt memory latching within the exact cycle divergence is identified. |
 | **Hardwired Telemetry FSM** | Autonomous context capture + circular UART FIFO | Streams diagnostic crash signatures (`fault_pc`, mismatch mask) without reliance on CPU software. |
 | **Domain-Specific Safety Engine** | Memory-mapped 4-MAC Q8.8 matrix coprocessor | Offloads real-time vehicle deceleration calculations and wheel-slip math from CPU software. |
 | **Microsecond Containment** | Total hardware reaction latency $\le 20.8\text{ ns}$ | Consumes negligible fraction of automotive Fault Tolerant Time Intervals ($\text{FTTI} \approx 10 to 20 ms$). |
@@ -147,7 +147,7 @@ Comparator:         [---]  [---]  [MATCH] [MATCH] [MATCH] [MATCH]
 
 Sequential fault registration introduces a single-clock latency window during which corrupt data can be acknowledged and stored into memory or external actuator drivers.
 
-To eliminate latency escapes, the bus firewall uses combinational gating with sub-nanosecond propagation delay ($T_{pd} < 1.0\text{ ns}$):
+To eliminate latency escapes, the bus firewall uses purely combinational gating, so corrupted requests are blocked in the same clock cycle the mismatch is detected:
 
 $$\text{Mismatch} = (\text{AWADDR}_m \ne \text{AWADDR}_s) \lor (\text{WDATA}_m \ne \text{WDATA}_s) \lor (\text{WSTRB}_m \ne \text{WSTRB}_s) \lor (\text{WE}_m \ne \text{WE}_s)$$
 
@@ -209,40 +209,58 @@ This SoC integrates and validates two established open-source hardware repositor
 
 ## Verification & Fault Injection Suite
 
-The architecture was validated using a dedicated SystemVerilog fault-injection testbench (`tb/tb_fault_injector.sv`) executing **500+ randomized Monte Carlo fault campaigns** across:
-- The Program Counter (`if_pc`)
-- The General Purpose Register File (`x1` through `x31`)
-- The ALU arithmetic and logic result bus
-- The branch decision comparator
+The architecture was validated using a dedicated SystemVerilog fault-injection testbench (`tb/tb_fault_injection_campaign.sv`) that runs a nominal baseline and then **7 directed fault scenarios**, each forcing a corruption with `force` and checking detection, isolation, and telemetry:
 
-### Formal SystemVerilog Assertions (SVA)
+1. Master-core program counter corruption (`if_pc` forced to unmapped `0x0000_0500`)
+2. Data-memory address corruption on a write
+3. Data-memory write-data corruption (`0xDEAD_BEEF`)
+4. Spurious write-enable from the master core
+5. Shadow-core program counter divergence
+6. Instruction-memory address divergence
+7. Spurious read-enable from the master core
+
+Register-file, ALU-result, and branch-comparator fault injection, and randomized multi-fault campaigns, are planned extensions.
+
+### SystemVerilog Assertions (SVA)
+
+Four concurrent assertions run throughout the campaign:
 
 ```systemverilog
-// SVA Property 1: Fault detection latency must be <= 2 clock cycles
-property p_fault_detection_latency;
-    @(posedge clk) disable iff (!rst_n)
-    u_soc.u_dcls.any_mismatch |-> ##[0:2] u_soc.u_dcls.fault_latched;
+// 1: Zero-cycle firewall clamping on combinational fault detection
+property p_firewall_clamp_immediate;
+    @(posedge clk)
+    dut.fault_detected_comb |-> (dut.protected_dmem_we == 1'b0 && dut.protected_dmem_re == 1'b0);
 endproperty
-assert_latency: assert property (p_fault_detection_latency);
 
-// SVA Property 2: Zero corrupted write enables reach RAM post-fault
-property p_zero_corrupted_writes;
-    @(posedge clk) disable iff (!rst_n)
-    u_soc.u_dcls.fault_latched |-> (u_soc.protected_dmem_we == 1'b0);
+// 2: No memory writes reach the bus once a fault is latched
+property p_no_corrupt_memory_write;
+    @(posedge clk)
+    dut.fault_latched |-> (dut.protected_dmem_we == 1'b0);
 endproperty
-assert_isolation: assert property (p_zero_corrupted_writes);
+
+// 3: Sticky safe-state interlock while a fault is latched
+property p_safe_state_asserted;
+    @(posedge clk)
+    dut.fault_latched |-> (dut.safe_state_out == 1'b1);
+endproperty
+
+// 4: FCU only pushes telemetry bytes while busy
+property p_fcu_telemetry_valid;
+    @(posedge clk)
+    dut.u_fcu.fcu_tx_push |-> (dut.u_fcu.fcu_busy == 1'b1);
+endproperty
 ```
 
-### Measured Safety Metrics
+### Measured Results
 
-| ISO 26262 Metric | ASIL-D Target | Measured Result | Status |
+| Check | Target | Measured Result | Status |
 | :--- | :--- | :--- | :--- |
-| **Single Point Fault Metric (SPFM)** | $> 99.0\%$ | **100.0% (500/500 faults)** | PASSED |
+| **Directed faults detected and contained** | All injected faults | **7 / 7** | PASSED |
 | **Fault Detection Latency** | $< \text{FTTI}$ ($2.0\ \mu\text{s}$) | **$\le 20\text{ ns}$ (2 cycles)** | PASSED |
-| **Bus Clamping Latency** | $< 1\text{ clock cycle}$ | **$< 1.0\text{ ns}$ (Combinational)** | PASSED |
+| **Bus Clamping Latency** | $< 1\text{ clock cycle}$ | **Combinational (same cycle)** | PASSED |
 | **Actuator Isolation Pin** | Instant assertion | **Asserted on clock edge** | PASSED |
 
-$$\text{SPFM} = \frac{N_{\text{detected}}}{N_{\text{total}}} = \frac{500}{500} = \mathbf{100.0\%}$$
+These directed results demonstrate the detection mechanism. They are not an ISO 26262 Single-Point Fault Metric (SPFM), which is computed over a full failure-mode analysis with failure rates; that analysis has not been done for this design.
 
 ### Simulation Waveform Verification & Results Analysis
 
@@ -252,7 +270,7 @@ The physical fault injection campaign was simulated in AMD Vivado XSim across al
 ![Top-Level Safety and Bus Firewall Waveform](docs/assets/waveform_top_firewall.png)
 
 - **System Interlocks (`safe_state_out`, `fault_indicator`)**: Transition from `0` to `1` on clock edges following any detected divergence, latching the SoC permanently into a fail-safe state to decouple external automotive actuators.
-- **Sub-Nanosecond Bus Firewall Clamping (`protected_dmem_we`)**: Notice that while the internal CPU pipelines pulse memory write requests, the moment `fault_detected_comb` asserts high, `protected_dmem_we` is clamped to `0` within $< 1.0\text{ ns}$ by the combinational comparison trees. Corrupt data never reaches SRAM.
+- **Same-Cycle Bus Firewall Clamping (`protected_dmem_we`)**: Notice that while the internal CPU pipelines pulse memory write requests, the moment `fault_detected_comb` asserts high, `protected_dmem_we` is clamped to `0` in the same cycle by the combinational comparison trees. Corrupt data never reaches SRAM.
 - **Syndrome Latching (`fault_code`, `fault_pc`)**: Upon fault detection, the exact offending Program Counter (`0x0000_0500` in Run 2) and fault classification vector are latched into diagnostic registers for non-volatile blackbox telemetry logging.
 
 #### 2. Dual-Core Lockstep Alignment & SEU Containment
@@ -269,7 +287,7 @@ The physical fault injection campaign was simulated in AMD Vivado XSim across al
 - **Hardware Safety Metric Accumulators**:
   - `total_faults_injected`: Monotonically increments from 0 to 7 across all test runs.
   - `total_faults_detected`: Reaches 7 out of 7, confirming 100.0% fault detection coverage.
-  - `total_faults_contained`: Reaches 7 out of 7, verifying 100.0% Single-Point Fault Metric (SPFM) with zero silent data corruption escapes.
+  - `total_faults_contained`: Reaches 7 out of 7, with zero silent data corruption escapes across the directed scenarios.
 
 ---
 
@@ -319,7 +337,7 @@ The design was synthesized for an **AMD Xilinx Artix-7 FPGA (`xc7a100tcsg324-1`)
 .\scripts\run_tb_abs_firmware.bat
 ```
 
-#### 5. Phase 6: Automated Fault Injection Campaign (100% SPFM)
+#### 5. Phase 6: Directed Fault Injection Campaign (7 scenarios)
 ```powershell
 .\scripts\run_tb_fault_injection.bat
 ```
@@ -348,7 +366,7 @@ safety-critical-dcls-soc/
 │   ├── tb_dcls_fcu.sv         # Phase 4: Autonomous Blackbox Crash Telemetry TB
 │   ├── tb_safety_soc_top.sv   # Phase 4: Full SoC Integration TB
 │   ├── tb_abs_firmware.sv     # Phase 5: Bare-Metal ABS Safety Firmware TB
-│   └── tb_fault_injection_campaign.sv # Phase 6: SVA Fault Injection Campaign (100% SPFM)
+│   └── tb_fault_injection_campaign.sv # Phase 6: SVA fault-injection campaign (7 directed scenarios)
 ├── sw/
 │   ├── abs_safety_app.S       # Automotive Anti-Lock Braking Application Source
 │   ├── rv32i_asm.py           # Self-Contained Pure Python RV32I Assembler
@@ -388,7 +406,7 @@ The `docs/` directory contains an interlinked Obsidian knowledge base detailing 
 - [Fault Control Unit & Autonomous UART Telemetry](docs/04%20-%20Fault%20Control%20Unit%20&%20UART%20Telemetry/01_FCU_and_Blackbox_Telemetry_Logging.md)
 - [System Interconnect & Memory Map Architecture](docs/05%20-%20System%20Interconnect%20&%20IP%20Integration/01_Memory_Map_and_Interconnect_Architecture.md)
 - [Bare-Metal Safety Firmware & ABS Control Loop](docs/06%20-%20Bare-Metal%20Safety%20Firmware/01_Safety_Firmware_and_ABS_Control_Loop.md)
-- [Fault Injection Suite & 100% SPFM Scorecard](docs/07%20-%20Fault%20Injection%20&%20Verification%20Suite/01_Fault_Injection_and_ASIL_D_Verification.md)
+- [Fault Injection Suite (design notes)](docs/07%20-%20Fault%20Injection%20&%20Verification%20Suite/01_Fault_Injection_and_ASIL_D_Verification.md)
 - [FPGA Physical Synthesis & Static Timing Analysis](docs/08%20-%20Physical%20Synthesis%20&%20Timing%20Closure/01_FPGA_Synthesis_and_Timing_Closure_Artix7.md)
 - [Phase-by-Phase Implementation Roadmap](docs/09%20-%20Step-by-Step%20Implementation%20Roadmap/01_Comprehensive_Phase_by_Phase_Execution_Plan.md)
 

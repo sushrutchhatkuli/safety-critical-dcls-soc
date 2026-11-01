@@ -135,7 +135,7 @@ flowchart TD
 | Metric / Parameter | Target (ISO 26262 ASIL-D) | DCLS SoC Implementation | Verification Status |
 | :--- | :--- | :--- | :--- |
 | **Target Clock Frequency** | $\ge 50\text{ MHz}$ | **$100.0\text{ MHz}$ ($10.0\text{ ns}$)** | Verified in XSim / Synth |
-| **Single Point Fault Metric (SPFM)** | $> 99.0\%$ | **$100.0\%$ (500/500 faults)** | Verified via `tb_fault_injector` |
+| **Directed fault injection** | All injected faults caught | **7 / 7 detected and contained** | Verified via `tb_fault_injection_campaign` (not a full ISO 26262 SPFM analysis) |
 | **Latent Fault Metric (LFM)** | $> 90.0\%$ | **$96.4\%$** | Built-in Self-Test (BIST) |
 | **Fault Detection Latency** | $< \text{FTTI}$ ($2.0\ \mu\text{s}$) | **$\le 2\text{ clock cycles}$ ($20\text{ ns}$)** | Verified by SVA Assertion 1 |
 | **Bus Clamping Latency** | $< 1\text{ clock cycle}$ | **$0\text{ clock cycles}$ ($< 1.0\text{ ns}$ comb.)** | Verified by SVA Assertion 2 |
